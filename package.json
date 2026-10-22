@@ -10,6 +10,7 @@
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix client run build",
     "build:client": "npm --prefix client run build",
+    "ship": "git add . && git commit -m \"update\" && git push origin main",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install",
     "start": "node server/index.js"
   },
