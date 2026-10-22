@@ -88,15 +88,17 @@ const SettingsPage = () => {
     reader.readAsText(file);
   };
 
-  const handleResetData = () => {
+  const handleClearData = () => {
     if (
       window.confirm(
-        'Are you sure you want to reset all data back to the default demo data? This will clear any newly added expenses.'
+        'Are you sure you want to clear all data? This will log you out and clear all stored data.'
       )
     ) {
-      frontendStore.resetData();
-      toast.success('Reset to demo sample data! Reloading...');
-      setTimeout(() => window.location.reload(), 800);
+      frontendStore.clearAllData();
+      toast.success('All data cleared!');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     }
   };
 
@@ -238,10 +240,10 @@ const SettingsPage = () => {
             variant="secondary"
             size="sm"
             icon={RotateCcw}
-            onClick={handleResetData}
+            onClick={handleClearData}
             fullWidth
           >
-            Reset Demo Data
+            Clear All Data
           </GlassButton>
         </div>
       </GlassCard>

@@ -23,185 +23,7 @@ const generateInviteCode = () => {
   return code;
 };
 
-// Initial Demo Seed Data
-const getInitialSeed = () => {
-  const me = {
-    _id: 'usr_me',
-    id: 'usr_me',
-    name: 'Ranveer',
-    email: 'ranveer@example.com',
-    password: 'password123',
-    defaultCurrency: 'INR',
-    avatar: '',
-    createdAt: new Date().toISOString(),
-  };
-
-  const maya = {
-    _id: 'usr_maya',
-    id: 'usr_maya',
-    name: 'Maya Lin',
-    email: 'maya@example.com',
-    defaultCurrency: 'INR',
-    avatar: '',
-    createdAt: new Date().toISOString(),
-  };
-
-  const alex = {
-    _id: 'usr_alex',
-    id: 'usr_alex',
-    name: 'Alex Rivera',
-    email: 'alex@example.com',
-    defaultCurrency: 'INR',
-    avatar: '',
-    createdAt: new Date().toISOString(),
-  };
-
-  const sam = {
-    _id: 'usr_sam',
-    id: 'usr_sam',
-    name: 'Sam Chen',
-    email: 'sam@example.com',
-    defaultCurrency: 'INR',
-    avatar: '',
-    createdAt: new Date().toISOString(),
-  };
-
-  const users = [me, maya, alex, sam];
-
-  const groupTrip = {
-    _id: 'grp_goa',
-    id: 'grp_goa',
-    name: 'Goa Beach Trip 🏖️',
-    description: 'Shared expenses for flights, beach villa, rentals & dinners in North Goa',
-    type: 'trip',
-    currency: 'INR',
-    inviteCode: 'GOA2026',
-    createdBy: me._id,
-    members: [
-      { user: me._id, role: 'admin', joinedAt: new Date().toISOString() },
-      { user: maya._id, role: 'member', joinedAt: new Date().toISOString() },
-      { user: alex._id, role: 'member', joinedAt: new Date().toISOString() },
-      { user: sam._id, role: 'member', joinedAt: new Date().toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-  };
-
-  const groupHome = {
-    _id: 'grp_apt',
-    id: 'grp_apt',
-    name: 'Apartment 204 🏠',
-    description: 'Rent, groceries, high-speed WiFi, electricity & maintenance',
-    type: 'home',
-    currency: 'INR',
-    inviteCode: 'APT204',
-    createdBy: me._id,
-    members: [
-      { user: me._id, role: 'admin', joinedAt: new Date().toISOString() },
-      { user: alex._id, role: 'member', joinedAt: new Date().toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
-  };
-
-  const groups = [groupTrip, groupHome];
-
-  const expenses = [
-    {
-      _id: 'exp_1',
-      id: 'exp_1',
-      description: 'Beachfront Villa Booking',
-      amount: 12000,
-      currency: 'INR',
-      category: 'accommodation',
-      paidBy: me._id,
-      group: groupTrip._id,
-      date: new Date(Date.now() - 3 * 86400000).toISOString(),
-      splitType: 'equal',
-      splits: [
-        { user: me._id, amount: 3000 },
-        { user: maya._id, amount: 3000 },
-        { user: alex._id, amount: 3000 },
-        { user: sam._id, amount: 3000 },
-      ],
-      notes: 'Paid via credit card for 3 nights stay',
-      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-    },
-    {
-      _id: 'exp_2',
-      id: 'exp_2',
-      description: 'Sunset Seafood Dinner',
-      amount: 4800,
-      currency: 'INR',
-      category: 'food',
-      paidBy: maya._id,
-      group: groupTrip._id,
-      date: new Date(Date.now() - 2 * 86400000).toISOString(),
-      splitType: 'equal',
-      splits: [
-        { user: me._id, amount: 1200 },
-        { user: maya._id, amount: 1200 },
-        { user: alex._id, amount: 1200 },
-        { user: sam._id, amount: 1200 },
-      ],
-      notes: 'Dinner at Thalassa Anjuna',
-      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    },
-    {
-      _id: 'exp_3',
-      id: 'exp_3',
-      description: 'High-speed Fiber WiFi',
-      amount: 1500,
-      currency: 'INR',
-      category: 'utilities',
-      paidBy: alex._id,
-      group: groupHome._id,
-      date: new Date(Date.now() - 1 * 86400000).toISOString(),
-      splitType: 'equal',
-      splits: [
-        { user: me._id, amount: 750 },
-        { user: alex._id, amount: 750 },
-      ],
-      notes: 'Monthly 300 Mbps unlimited plan',
-      createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-    },
-    {
-      _id: 'exp_4',
-      id: 'exp_4',
-      description: 'Weekly Organic Groceries',
-      amount: 2400,
-      currency: 'INR',
-      category: 'shopping',
-      paidBy: me._id,
-      group: groupHome._id,
-      date: new Date().toISOString(),
-      splitType: 'equal',
-      splits: [
-        { user: me._id, amount: 1200 },
-        { user: alex._id, amount: 1200 },
-      ],
-      notes: 'Fruits, vegetables, dairy and essentials',
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  const settlements = [
-    {
-      _id: 'set_1',
-      id: 'set_1',
-      from: alex._id,
-      to: me._id,
-      amount: 1000,
-      currency: 'INR',
-      group: groupTrip._id,
-      date: new Date(Date.now() - 86400000).toISOString(),
-      notes: 'UPI transfer for initial trip advance',
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ];
-
-  return { users, groups, expenses, settlements, currentUser: me };
-};
-
-// Storage Helpers
+// Storage Management Engine (Clean State - No Dummy Data)
 class FrontendStore {
   constructor() {
     this.ensureInitialized();
@@ -209,16 +31,30 @@ class FrontendStore {
 
   ensureInitialized() {
     try {
+      // Purge any legacy dummy data from previous tests
       const existingUsers = localStorage.getItem(STORAGE_KEYS.USERS);
-      if (!existingUsers) {
-        const seed = getInitialSeed();
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(seed.users));
-        localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(seed.groups));
-        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(seed.expenses));
-        localStorage.setItem(STORAGE_KEYS.SETTLEMENTS, JSON.stringify(seed.settlements));
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(seed.currentUser));
-        localStorage.setItem(STORAGE_KEYS.TOKEN, 'local_token_spend_a_friend');
-        localStorage.setItem('user', JSON.stringify(seed.currentUser));
+      if (existingUsers && (existingUsers.includes('usr_maya') || existingUsers.includes('usr_me'))) {
+        localStorage.removeItem(STORAGE_KEYS.USERS);
+        localStorage.removeItem(STORAGE_KEYS.GROUPS);
+        localStorage.removeItem(STORAGE_KEYS.EXPENSES);
+        localStorage.removeItem(STORAGE_KEYS.SETTLEMENTS);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+        localStorage.removeItem('user');
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      }
+
+      // Initialize clean empty arrays if not present
+      if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.GROUPS)) {
+        localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify([]));
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.EXPENSES)) {
+        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
+      }
+      if (!localStorage.getItem(STORAGE_KEYS.SETTLEMENTS)) {
+        localStorage.setItem(STORAGE_KEYS.SETTLEMENTS, JSON.stringify([]));
       }
     } catch (err) {
       console.warn('Storage initialization error:', err);
@@ -316,10 +152,9 @@ class FrontendStore {
     const users = this.getCollection(STORAGE_KEYS.USERS);
     const normalizedEmail = email.trim().toLowerCase();
 
-    let user = users.find((u) => u.email?.toLowerCase() === normalizedEmail);
+    const user = users.find((u) => u.email?.toLowerCase() === normalizedEmail);
     if (!user) {
-      // Auto-create or reject
-      throw new Error('Invalid email or password');
+      throw new Error('No account found with this email. Please register first.');
     }
 
     if (user.password && user.password !== password) {
@@ -522,7 +357,6 @@ class FrontendStore {
     } else if (params.friend || params.friendId) {
       const fId = String(params.friend || params.friendId);
       list = list.filter((e) => {
-        // Individual expense between current user and friend
         const payerId = String(e.paidBy?._id || e.paidBy?.id || e.paidBy);
         const splitUserIds = (e.splits || []).map((s) => String(s.user?._id || s.user?.id || s.user));
         return (
@@ -685,13 +519,12 @@ class FrontendStore {
     const expenses = this.getCollection(STORAGE_KEYS.EXPENSES);
     const settlements = this.getCollection(STORAGE_KEYS.SETTLEMENTS);
 
-    // Filter all other users as potential friends
+    // Filter all other users as friends
     const otherUsers = users.filter((u) => String(u._id || u.id) !== myId);
 
     const friendsWithBalances = otherUsers.map((friend) => {
       const fId = String(friend._id || friend.id);
 
-      // Filter all shared expenses & settlements
       const sharedExpenses = expenses.filter((e) => {
         const payerId = String(e.paidBy?._id || e.paidBy?.id || e.paidBy);
         const splitIds = (e.splits || []).map((s) => String(s.user?._id || s.user?.id || s.user));
@@ -783,7 +616,6 @@ class FrontendStore {
     let friend = users.find((u) => u.email?.toLowerCase() === cleanEmail);
 
     if (!friend) {
-      // Auto-create a friend user with a generated name from email
       const namePart = cleanEmail.split('@')[0];
       const friendlyName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
 
@@ -852,7 +684,7 @@ class FrontendStore {
     }
   }
 
-  resetData() {
+  clearAllData() {
     localStorage.removeItem(STORAGE_KEYS.USERS);
     localStorage.removeItem(STORAGE_KEYS.GROUPS);
     localStorage.removeItem(STORAGE_KEYS.EXPENSES);
