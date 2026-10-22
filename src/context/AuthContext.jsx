@@ -4,6 +4,7 @@ import api from '../api/axios';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  // Read saved session synchronously from localStorage for instant 0ms render
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem('user');
@@ -12,32 +13,90 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   });
-  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
-  const [loading, setLoading] = useState(true);
 
-  // Validate token and fetch user on mount
-  useEffect(() => {
-    const initAuth = async () => {
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('token') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  // If user and token already exist in localStorage, do NOT block the UI
+  const [loading, setLoading] = useState(() => {
+    try {
       const storedToken = localStorage.getItem('token');
-      if (storedToken) {
-        try {
-          const res = await api.get('/auth/me');
-          if (res.data?.user) {
-            setUser(res.data.user);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-          }
-        } catch (error) {
-          console.error('Failed to authenticate token:', error);
+      const storedUser = localStorage.getItem('user');
+      // If we already have token and user in localStorage, don't show blocking spinner
+      return !(storedToken && storedUser);
+    } catch {
+      return false;
+    }
+  });
+
+  // Background silent token verification & sync
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifySession = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await api.get('/auth/me');
+        if (res.data?.user && isMounted) {
+          setUser(res.data.user);
+          localStorage.setItem('user', JSON.stringify(res.data.user));
+        }
+      } catch (error) {
+        // ONLY log out if the backend explicitly tells us the token is invalid/expired (401)
+        if (error.response?.status === 401) {
+          console.warn('Session expired or invalid token. Logging out.');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          setUser(null);
-          setToken(null);
+          if (isMounted) {
+            setUser(null);
+            setToken(null);
+          }
+        } else {
+          // If network error, 500, or temporary serverless spin-up delay:
+          // Keep the cached user session so the user remains logged in!
+          console.warn('Background auth refresh skipped (retaining cached session):', error.message);
         }
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
     };
 
-    initAuth();
+    verifySession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Multi-window & Multi-tab Storage Event Listener
+  // Keeps session in perfect sync across all opened windows and tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'token') {
+        setToken(e.newValue);
+        if (!e.newValue) setUser(null);
+      }
+      if (e.key === 'user') {
+        try {
+          setUser(e.newValue ? JSON.parse(e.newValue) : null);
+        } catch {
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const login = async (email, password) => {
@@ -47,6 +106,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(receivedUser));
     setToken(receivedToken);
     setUser(receivedUser);
+    setLoading(false);
     return response.data;
   };
 
@@ -59,6 +119,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(receivedUser));
     setToken(receivedToken);
     setUser(receivedUser);
+    setLoading(false);
     return response.data;
   };
 

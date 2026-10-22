@@ -1,11 +1,14 @@
 import mongoose from 'mongoose';
 import dns from 'dns';
 
-// Ensure Google DNS servers are used if ISP blocks SRV records (Windows & dev environments)
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4']);
-} catch (e) {
-  // In serverless environments where custom DNS is restricted, fail gracefully
+// Use Google DNS only on Windows dev machines where local ISP might block MongoDB Atlas SRV records
+// In Linux / Vercel Serverless production, use native DNS resolution for maximum speed
+if (process.platform === 'win32') {
+  try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+  } catch (e) {
+    // fail silently if not permitted
+  }
 }
 
 // Global cached connection for Serverless / Lambda environments
@@ -21,7 +24,7 @@ const DEFAULT_MONGODB_URI =
 export async function connectDB() {
   const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
 
-  // If already connected and ready, return existing connection
+  // If already connected and ready, return existing connection immediately (0ms)
   if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
@@ -35,9 +38,10 @@ export async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 6000,
+      connectTimeoutMS: 8000,
       maxPoolSize: 10,
+      maxIdleTimeMS: 60000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {

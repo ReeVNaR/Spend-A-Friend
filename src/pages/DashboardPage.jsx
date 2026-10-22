@@ -29,11 +29,12 @@ const DashboardPage = () => {
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch expenses, groups, and friends concurrently
-      const [expensesRes, groupsRes, friendsRes] = await Promise.allSettled([
+      // Fetch expenses, groups, friends, and balances concurrently in parallel
+      const [expensesRes, groupsRes, friendsRes, balRes] = await Promise.allSettled([
         api.get('/expenses?limit=10'),
         api.get('/groups'),
         api.get('/friends'),
+        api.get('/friends/balances'),
       ]);
 
       const expensesList =
@@ -54,18 +55,14 @@ const DashboardPage = () => {
           : [];
       setFriends(Array.isArray(friendsList) ? friendsList : []);
 
-      // Calculate balances from friends or direct balance endpoint
-      try {
-        const balRes = await api.get('/friends/balances');
-        if (balRes.data) {
-          setBalanceData({
-            youOwe: balRes.data.youOwe || 0,
-            owedToYou: balRes.data.owedToYou || 0,
-            netBalance: balRes.data.netBalance || 0,
-          });
-        }
-      } catch {
-        // Fallback: calculate from friends list if friends endpoint provided balances
+      if (balRes.status === 'fulfilled' && balRes.value.data) {
+        setBalanceData({
+          youOwe: balRes.value.data.youOwe || 0,
+          owedToYou: balRes.value.data.owedToYou || 0,
+          netBalance: balRes.value.data.netBalance || 0,
+        });
+      } else {
+        // Fallback: calculate from friends list if balances endpoint was not available
         let owe = 0;
         let owed = 0;
         if (Array.isArray(friendsList)) {
