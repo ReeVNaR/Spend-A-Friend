@@ -2,18 +2,26 @@
   "name": "spend-a-friend",
   "version": "1.0.0",
   "private": true,
-  "description": "Spend-A-Friend - Pure Frontend Liquid Glass Expense Splitting Web App",
+  "description": "Spend-A-Friend - Real-time expense splitting web app for friends with liquid glass UI",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,cyan\" \"nodemon server/index.js\" \"vite\"",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "node server/index.js",
     "ship": "git add . && git commit -m \"update\" && git push origin main"
   },
   "dependencies": {
     "axios": "^1.20.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
     "date-fns": "^4.4.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^1.61.0",
+    "mongoose": "^8.4.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-hot-toast": "^2.6.1",
@@ -24,6 +32,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.3",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.4"
   }
