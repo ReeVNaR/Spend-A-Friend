@@ -7,13 +7,15 @@ import { validateRequest } from '../middleware/validate.js';
 
 const router = express.Router();
 
+const JWT_DEFAULT_SECRET = 'spend_a_friend_super_secure_jwt_secret_dev_2026_xyz!@#';
+
 /**
  * Helper to generate JWT token for a user
  */
 const generateToken = (userId) => {
   return jwt.sign(
     { id: userId },
-    process.env.JWT_SECRET || 'spend_a_friend_super_secure_jwt_secret_dev_2026_xyz!@#',
+    process.env.JWT_SECRET || JWT_DEFAULT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '30d' }
   );
 };
@@ -137,16 +139,11 @@ router.post(
 // @route   GET /api/auth/me
 // @desc    Get current logged in user profile
 // @access  Protected
-router.get('/me', protect, async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user._id);
-    return res.status(200).json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    next(error);
-  }
+router.get('/me', protect, async (req, res) => {
+  return res.status(200).json({
+    success: true,
+    user: req.user,
+  });
 });
 
 // @route   PUT /api/auth/me

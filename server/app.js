@@ -38,8 +38,6 @@ app.use(
       // Allow Vercel preview and production deployments
       if (origin.endsWith('.vercel.app')) return callback(null, true);
       if (devAllowedOrigins.includes(origin)) return callback(null, true);
-      // In development or preview, allow all
-      if (process.env.NODE_ENV !== 'production') return callback(null, true);
       return callback(null, true); // Allow all web origins for expense sharing
     },
     credentials: true,
@@ -66,8 +64,8 @@ app.use(async (req, res, next) => {
     console.error('[Database Connection Error]:', err.message);
     res.status(500).json({
       success: false,
-      message: 'Failed to connect to the database. Please verify MONGODB_URI.',
-      error: process.env.NODE_ENV === 'production' ? undefined : err.message,
+      message: `Failed to connect to database: ${err.message}`,
+      error: err.message,
     });
   }
 });
