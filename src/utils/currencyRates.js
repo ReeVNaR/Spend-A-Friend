@@ -1,7 +1,7 @@
 // Supported currencies
 export const SUPPORTED_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD'];
 
-// Base exchange rates relative to USD (fallback / default)
+// Default exchange rates relative to USD
 export const DEFAULT_RATES = {
   USD: 1.0,
   INR: 83.5,
@@ -12,7 +12,6 @@ export const DEFAULT_RATES = {
   CAD: 1.37,
 };
 
-// Cache exchange rates in memory with 1 hour TTL
 let cachedRates = { ...DEFAULT_RATES };
 let lastFetchTime = 0;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -24,7 +23,6 @@ export const getExchangeRates = async (baseCurrency = 'USD') => {
   const normalizedBase = (baseCurrency || 'USD').toUpperCase();
   const now = Date.now();
 
-  // Try fetching fresh rates if cache expired
   if (now - lastFetchTime > CACHE_TTL_MS) {
     try {
       const controller = new AbortController();
@@ -46,19 +44,16 @@ export const getExchangeRates = async (baseCurrency = 'USD') => {
           lastFetchTime = now;
         }
       }
-    } catch (err) {
-      // Network failure or timeout: keep using cached or default rates
-      console.warn('Could not fetch external currency rates, using fallback rates:', err.message);
+    } catch {
+      // Offline or network error: use cached or default rates
     }
   }
 
-  // Base conversion if requested base is not USD
   const baseRateToUSD = cachedRates[normalizedBase] || DEFAULT_RATES[normalizedBase] || 1;
   const ratesForBase = {};
 
   for (const curr of SUPPORTED_CURRENCIES) {
     const rateAgainstUSD = cachedRates[curr] || DEFAULT_RATES[curr];
-    // rate = targetRate / baseRate
     ratesForBase[curr] = Number((rateAgainstUSD / baseRateToUSD).toFixed(6));
   }
 
@@ -70,7 +65,7 @@ export const getExchangeRates = async (baseCurrency = 'USD') => {
 };
 
 /**
- * Convert an amount from one currency to another
+ * Convert an amount between currencies
  */
 export const convertCurrency = async (amount, fromCurrency, toCurrency) => {
   const from = (fromCurrency || 'INR').toUpperCase();
@@ -78,7 +73,7 @@ export const convertCurrency = async (amount, fromCurrency, toCurrency) => {
   const numAmount = Number(amount);
 
   if (isNaN(numAmount) || numAmount < 0) {
-    throw new Error('Invalid amount for conversion');
+    return { from, to, originalAmount: 0, convertedAmount: 0, rate: 1 };
   }
 
   if (from === to) {

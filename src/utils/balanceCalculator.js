@@ -5,6 +5,7 @@ export const getUserIdString = (user) => {
   if (!user) return null;
   if (typeof user === 'string') return user;
   if (user._id) return user._id.toString();
+  if (user.id) return user.id.toString();
   if (user.toString) return user.toString();
   return String(user);
 };
@@ -12,15 +13,15 @@ export const getUserIdString = (user) => {
 /**
  * Calculates net balances and simplified debt transactions for a list of expenses and settlements.
  *
- * @param {Array} expenses - Array of Expense documents or objects
- * @param {Array} settlements - Array of Settlement documents or objects
+ * @param {Array} expenses - Array of Expense objects
+ * @param {Array} settlements - Array of Settlement objects
  * @param {Array} members - Optional list of group member user objects or IDs
- * @returns {Object} { netBalances, simplifiedDebts, pairwiseBalances, summary }
+ * @returns {Object} { netBalances, simplifiedDebts, userBreakdown, summary }
  */
 export const calculateBalances = (expenses = [], settlements = [], members = []) => {
   // Map of userId -> net amount (positive = owed money / creditor, negative = owes money / debtor)
   const netBalances = new Map();
-  // Map of userId -> { paid: Number, share: Number, receivedSettlement: Number, paidSettlement: Number }
+  // Map of userId -> breakdown stats
   const userBreakdown = new Map();
 
   // Initialize all known group members with 0 balance
@@ -56,15 +57,6 @@ export const calculateBalances = (expenses = [], settlements = [], members = [])
   let totalExpenses = 0;
   let totalSettlements = 0;
 
-  // Pairwise directed debt tracking: pairwise[debtor][creditor] = amount
-  const directDebts = new Map();
-
-  const recordDirectDebt = (debtorId, creditorId, amount) => {
-    if (debtorId === creditorId || amount <= 0) return;
-    const key = `${debtorId}->${creditorId}`;
-    directDebts.set(key, (directDebts.get(key) || 0) + amount);
-  };
-
   // 1. Process Expenses
   for (const exp of expenses) {
     const expenseAmount = Number(exp.convertedAmount ?? exp.amount ?? 0);
@@ -88,11 +80,6 @@ export const calculateBalances = (expenses = [], settlements = [], members = [])
         ensureUser(participantId);
         netBalances.set(participantId, netBalances.get(participantId) - splitAmount);
         userBreakdown.get(participantId).share += splitAmount;
-
-        // In pairwise debt: participant owes payer the splitAmount
-        if (participantId !== payerId) {
-          recordDirectDebt(participantId, payerId, splitAmount);
-        }
       }
     }
   }
@@ -118,10 +105,6 @@ export const calculateBalances = (expenses = [], settlements = [], members = [])
     // toId received money: their net decreases (-amount)
     netBalances.set(toId, netBalances.get(toId) - settlementAmount);
     userBreakdown.get(toId).receivedSettlement += settlementAmount;
-
-    // Settlement reduces debt of fromId -> toId (or increases direct credit)
-    const directKey = `${fromId}->${toId}`;
-    directDebts.set(directKey, (directDebts.get(directKey) || 0) - settlementAmount);
   }
 
   // 3. Round net balances to 2 decimal places & construct net balance summary
@@ -141,7 +124,6 @@ export const calculateBalances = (expenses = [], settlements = [], members = [])
   }
 
   // 4. Greedy Debt Simplification Algorithm
-  // Minimize the number of transactions required to settle all debts
   debtors.sort((a, b) => b.amount - a.amount);
   creditors.sort((a, b) => b.amount - a.amount);
 
@@ -167,12 +149,8 @@ export const calculateBalances = (expenses = [], settlements = [], members = [])
     debtor.amount = Math.round((debtor.amount - roundedSettle) * 100) / 100;
     creditor.amount = Math.round((creditor.amount - roundedSettle) * 100) / 100;
 
-    if (debtor.amount <= 0.01) {
-      debtorIndex++;
-    }
-    if (creditor.amount <= 0.01) {
-      creditorIndex++;
-    }
+    if (debtor.amount <= 0.01) debtorIndex++;
+    if (creditor.amount <= 0.01) creditorIndex++;
   }
 
   // Convert breakdown map to plain object
