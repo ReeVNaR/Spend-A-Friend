@@ -1,4 +1,4 @@
-import { calculateBalances } from '../utils/balanceCalculator';
+import { calculateBalances } from '../utils/balanceCalculator.js';
 
 const STORAGE_KEYS = {
   USERS: 'saf_users',

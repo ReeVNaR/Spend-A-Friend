@@ -1,5 +1,5 @@
-import frontendStore from '../services/frontendStore';
-import { getExchangeRates, convertCurrency } from '../utils/currencyRates';
+import frontendStore from '../services/frontendStore.js';
+import { getExchangeRates, convertCurrency } from '../utils/currencyRates.js';
 
 // Simulated delay helper for realistic feel (optional: 40ms)
 const delay = (ms = 40) => new Promise((resolve) => setTimeout(resolve, ms));

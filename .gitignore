@@ -1,14 +1,18 @@
 # Dependencies
 node_modules/
+client/node_modules/
 
 # Production / Build output
 dist/
+client/dist/
 
 # Local Environment Variables
 .env
 .env.local
 .env.*.local
+*.env*
 server/.env
+client/.env
 
 # Vercel
 .vercel
