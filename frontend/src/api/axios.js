@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-// In production on Vercel, VITE_API_URL points to the Render backend (e.g. https://spend-a-friend.onrender.com/api).
-// In local development, defaults to '/api' which Vite proxies to http://localhost:5000/api.
-let baseURL = import.meta.env.VITE_API_URL || '/api';
+// In production, automatically default to the live Render backend URL
+const defaultBaseURL = import.meta.env.PROD
+  ? 'https://spend-a-friend.onrender.com/api'
+  : '/api';
+
+let baseURL = import.meta.env.VITE_API_URL || defaultBaseURL;
 
 if (typeof baseURL === 'string' && baseURL.endsWith('/') && baseURL.length > 1) {
   baseURL = baseURL.slice(0, -1);
