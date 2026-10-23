@@ -135,14 +135,17 @@ router.get(
   '/',
   [
     query('groupId').optional().isMongoId().withMessage('Invalid group ID'),
+    query('group').optional().isMongoId().withMessage('Invalid group ID'),
     query('friendId').optional().isMongoId().withMessage('Invalid friend ID'),
+    query('friend').optional().isMongoId().withMessage('Invalid friend ID'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   ],
   validateRequest,
   async (req, res, next) => {
     try {
-      const { groupId, friendId } = req.query;
+      const groupId = req.query.groupId || req.query.group;
+      const friendId = req.query.friendId || req.query.friend;
       const page = Math.max(1, parseInt(req.query.page, 10) || 1);
       const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 20));
       const skip = (page - 1) * limit;

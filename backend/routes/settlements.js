@@ -20,12 +20,15 @@ router.get(
   '/',
   [
     query('groupId').optional().isMongoId().withMessage('Invalid group ID'),
+    query('group').optional().isMongoId().withMessage('Invalid group ID'),
     query('userId').optional().isMongoId().withMessage('Invalid user ID'),
+    query('user').optional().isMongoId().withMessage('Invalid user ID'),
   ],
   validateRequest,
   async (req, res, next) => {
     try {
-      const { groupId, userId } = req.query;
+      const groupId = req.query.groupId || req.query.group;
+      const userId = req.query.userId || req.query.user;
       const currentUserId = req.user._id.toString();
 
       let filter = {};
@@ -51,7 +54,6 @@ router.get(
         const isMember = group.members.some(
           (m) => getUserIdString(m.user) === currentUserId
         );
-
         if (!isMember) {
           return res.status(403).json({
             success: false,
@@ -61,15 +63,16 @@ router.get(
 
         filter = { group: groupId };
       } else if (userId) {
-        // Settlements between current user and specified user
+        // 1-on-1 settlements between current user and specified user
         filter = {
+          group: null,
           $or: [
             { from: currentUserId, to: userId },
             { from: userId, to: currentUserId },
           ],
         };
       } else {
-        // All settlements involving current user
+        // All settlements involving the current user
         filter = {
           $or: [{ from: currentUserId }, { to: currentUserId }],
         };
@@ -78,7 +81,8 @@ router.get(
       const settlements = await Settlement.find(filter)
         .populate('from', 'name email avatar defaultCurrency')
         .populate('to', 'name email avatar defaultCurrency')
-        .populate('group', 'name currency')
+        .populate('group', 'name currency type')
+        .populate('createdBy', 'name email')
         .sort({ date: -1, createdAt: -1 });
 
       return res.status(200).json({
@@ -93,128 +97,106 @@ router.get(
 );
 
 // @route   POST /api/settlements
-// @desc    Record a settlement payment between users
+// @desc    Record a new settlement payment
 // @access  Protected
 router.post(
   '/',
   [
     body('to')
       .notEmpty()
-      .withMessage('Recipient (to) is required')
+      .withMessage('Recipient user ID (to) is required')
       .isMongoId()
       .withMessage('Invalid recipient user ID'),
     body('amount')
       .notEmpty()
       .withMessage('Amount is required')
       .isFloat({ min: 0.01 })
-      .withMessage('Settlement amount must be greater than zero'),
-    body('from')
-      .optional()
-      .isMongoId()
-      .withMessage('Invalid payer user ID'),
+      .withMessage('Amount must be greater than 0'),
     body('currency')
       .optional()
-      .toUpperCase()
       .isIn(SUPPORTED_CURRENCIES)
       .withMessage(`Currency must be one of: ${SUPPORTED_CURRENCIES.join(', ')}`),
     body('group')
       .optional({ nullable: true, checkFalsy: true })
       .isMongoId()
       .withMessage('Invalid group ID'),
+    body('date')
+      .optional()
+      .isISO8601()
+      .toDate()
+      .withMessage('Date must be a valid ISO 8601 date'),
     body('notes')
       .optional()
       .trim()
       .isLength({ max: 500 })
       .withMessage('Notes cannot exceed 500 characters'),
-    body('date')
-      .optional()
-      .isISO8601()
-      .withMessage('Invalid date format'),
   ],
   validateRequest,
   async (req, res, next) => {
     try {
-      const { to, amount, from: reqFrom, currency, group: groupId, notes, date } = req.body;
-      const fromUserId = reqFrom || req.user._id.toString();
+      const { to, amount, currency, group, date, notes } = req.body;
+      const currentUserId = req.user._id.toString();
 
-      // Cannot settle with oneself
-      if (fromUserId.toString() === to.toString()) {
+      if (to === currentUserId) {
         return res.status(400).json({
           success: false,
-          message: 'Cannot record a settlement to yourself',
+          message: 'You cannot record a settlement payment to yourself',
         });
       }
 
-      // Verify current user is either payer or recipient
-      const currentUserId = req.user._id.toString();
-      if (fromUserId.toString() !== currentUserId && to.toString() !== currentUserId) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only record settlements that you paid or received',
-        });
-      }
-
-      // Check recipient user exists
-      const recipientUser = await User.findById(to);
-      if (!recipientUser) {
+      const recipient = await User.findById(to);
+      if (!recipient) {
         return res.status(404).json({
           success: false,
           message: 'Recipient user not found',
         });
       }
 
-      // Check payer user exists
-      const payerUser = await User.findById(fromUserId);
-      if (!payerUser) {
-        return res.status(404).json({
-          success: false,
-          message: 'Payer user not found',
-        });
-      }
-
-      // If group is provided, verify group and memberships
-      if (groupId) {
-        const group = await Group.findById(groupId);
-        if (!group) {
+      if (group) {
+        const groupDoc = await Group.findById(group);
+        if (!groupDoc) {
           return res.status(404).json({
             success: false,
             message: 'Group not found',
           });
         }
 
-        const isFromMember = group.members.some(
-          (m) => getUserIdString(m.user) === fromUserId.toString()
+        const currentIsMember = groupDoc.members.some(
+          (m) => getUserIdString(m.user) === currentUserId
         );
-        const isToMember = group.members.some(
-          (m) => getUserIdString(m.user) === to.toString()
+        const recipientIsMember = groupDoc.members.some(
+          (m) => getUserIdString(m.user) === to
         );
 
-        if (!isFromMember || !isToMember) {
+        if (!currentIsMember || !recipientIsMember) {
           return res.status(400).json({
             success: false,
-            message: 'Both payer and recipient must be members of the group',
+            message: 'Both sender and recipient must be members of the group',
           });
         }
       }
 
       const settlement = await Settlement.create({
-        from: fromUserId,
+        from: req.user._id,
         to,
-        amount: Math.round(Number(amount) * 100) / 100,
+        amount: Number(amount),
         currency: currency ? currency.toUpperCase() : req.user.defaultCurrency || 'INR',
-        group: groupId || null,
-        notes: notes || '',
-        date: date ? new Date(date) : new Date(),
+        group: group || null,
+        date: date || new Date(),
+        notes: notes ? notes.trim() : '',
+        createdBy: req.user._id,
       });
 
-      await settlement.populate('from', 'name email avatar defaultCurrency');
-      await settlement.populate('to', 'name email avatar defaultCurrency');
-      await settlement.populate('group', 'name currency');
+      const populatedSettlement = await Settlement.findById(settlement._id)
+        .populate('from', 'name email avatar defaultCurrency')
+        .populate('to', 'name email avatar defaultCurrency')
+        .populate('group', 'name currency type')
+        .populate('createdBy', 'name email');
 
       return res.status(201).json({
         success: true,
         message: 'Settlement recorded successfully',
-        settlement,
+        settlement: populatedSettlement,
       });
     } catch (error) {
       next(error);
@@ -223,7 +205,7 @@ router.post(
 );
 
 // @route   DELETE /api/settlements/:id
-// @desc    Delete a settlement (Only creator / from user)
+// @desc    Delete a settlement (only the creator/payer can delete)
 // @access  Protected
 router.delete(
   '/:id',
@@ -240,15 +222,19 @@ router.delete(
         });
       }
 
-      // Only the payer ('from' user) can delete
-      if (getUserIdString(settlement.from) !== req.user._id.toString()) {
+      const currentUserId = req.user._id.toString();
+      const creatorId = settlement.createdBy
+        ? settlement.createdBy.toString()
+        : settlement.from.toString();
+
+      if (creatorId !== currentUserId) {
         return res.status(403).json({
           success: false,
-          message: 'Only the payer who recorded this settlement can delete it',
+          message: 'Only the creator of this settlement can delete it',
         });
       }
 
-      await Settlement.findByIdAndDelete(settlement._id);
+      await settlement.deleteOne();
 
       return res.status(200).json({
         success: true,

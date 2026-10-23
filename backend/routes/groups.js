@@ -160,6 +160,79 @@ router.post(
 );
 
 // @route   GET /api/groups/:id
+// @route   POST /api/groups/:id/members
+// @desc    Add a member to a group by email or userId
+// @access  Protected (Members only)
+router.post(
+  '/:id/members',
+  [param('id').isMongoId().withMessage('Invalid group ID')],
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const group = await Group.findById(req.params.id);
+      if (!group) {
+        return res.status(404).json({ success: false, message: 'Group not found' });
+      }
+
+      const isCurrentMember = group.members.some(
+        (m) => getUserIdString(m.user) === req.user._id.toString()
+      );
+      if (!isCurrentMember) {
+        return res.status(403).json({ success: false, message: 'You must be a member to add people to this group' });
+      }
+
+      const { email, userId } = req.body;
+      let targetUser = null;
+      if (userId) {
+        targetUser = await User.findById(userId);
+      } else if (email) {
+        const cleanEmail = email.trim().toLowerCase();
+        targetUser = await User.findOne({ email: cleanEmail });
+        if (!targetUser) {
+          const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+          const namePart = cleanEmail.split('@')[0];
+          targetUser = await User.create({
+            name: namePart.charAt(0).toUpperCase() + namePart.slice(1),
+            email: cleanEmail,
+            password: tempPassword,
+            defaultCurrency: group.currency || 'INR',
+          });
+        }
+      }
+
+      if (!targetUser) {
+        return res.status(400).json({ success: false, message: 'Please provide a valid user email or ID' });
+      }
+
+      const alreadyMember = group.members.some(
+        (m) => getUserIdString(m.user) === targetUser._id.toString()
+      );
+      if (alreadyMember) {
+        return res.status(400).json({ success: false, message: `${targetUser.name} is already a member of this group` });
+      }
+
+      group.members.push({
+        user: targetUser._id,
+        role: 'member',
+        joinedAt: new Date(),
+      });
+
+      await group.save();
+      await group.populate('members.user', 'name email avatar defaultCurrency');
+      await group.populate('createdBy', 'name email avatar');
+
+      return res.status(200).json({
+        success: true,
+        message: `${targetUser.name} added to the group successfully`,
+        group,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// @route   GET /api/groups/:id
 // @desc    Get group details with populated members
 // @access  Protected (Members only)
 router.get(

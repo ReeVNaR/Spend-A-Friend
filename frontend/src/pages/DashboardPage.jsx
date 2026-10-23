@@ -144,6 +144,7 @@ const DashboardPage = () => {
         onClose={() => setIsAddExpenseOpen(false)}
         onSuccess={handleExpenseSuccess}
         groups={groups}
+        friends={friends}
       />
 
       <CreateGroupModal

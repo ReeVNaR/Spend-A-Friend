@@ -17,6 +17,8 @@ const AddExpenseModal = ({
   preselectedGroup = null,
   preselectedFriend = null,
   groups = [],
+  friends = [],
+  groupMembers = null,
 }) => {
   const { user } = useAuth();
 
@@ -26,6 +28,9 @@ const AddExpenseModal = ({
   const [category, setCategory] = useState('food');
   const [selectedGroupId, setSelectedGroupId] = useState(
     preselectedGroup?._id || preselectedGroup?.id || ''
+  );
+  const [selectedFriendId, setSelectedFriendId] = useState(
+    preselectedFriend?._id || preselectedFriend?.id || ''
   );
   const [paidBy, setPaidBy] = useState(user?._id || '');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -44,22 +49,36 @@ const AddExpenseModal = ({
     return null;
   }, [preselectedGroup, selectedGroupId, groups]);
 
+  // Determine chosen friend
+  const chosenFriend = useMemo(() => {
+    if (preselectedFriend) return preselectedFriend;
+    if (selectedFriendId) {
+      return friends
+        .map((f) => f.friend || f.user || f)
+        .find((f) => String(f._id || f.id) === String(selectedFriendId));
+    }
+    return null;
+  }, [preselectedFriend, selectedFriendId, friends]);
+
   // Determine available members for splitting
   const availableMembers = useMemo(() => {
+    if (groupMembers && groupMembers.length > 0) {
+      return groupMembers;
+    }
     if (activeGroup && activeGroup.members) {
       return activeGroup.members.map((m) => (m.user ? m.user : m));
     }
-    if (preselectedFriend) {
+    if (chosenFriend) {
       return [
         { _id: user?._id, name: `${user?.name || 'You'} (You)` },
         {
-          _id: preselectedFriend._id || preselectedFriend.id,
-          name: preselectedFriend.name,
+          _id: chosenFriend._id || chosenFriend.id,
+          name: chosenFriend.name,
         },
       ];
     }
     return [{ _id: user?._id, name: `${user?.name || 'You'} (You)` }];
-  }, [activeGroup, preselectedFriend, user]);
+  }, [groupMembers, activeGroup, chosenFriend, user]);
 
   // Initialize splits whenever available members or amount changes
   useEffect(() => {
@@ -271,7 +290,10 @@ const AddExpenseModal = ({
             </label>
             <select
               value={selectedGroupId}
-              onChange={(e) => setSelectedGroupId(e.target.value)}
+              onChange={(e) => {
+                setSelectedGroupId(e.target.value);
+                if (e.target.value) setSelectedFriendId('');
+              }}
               className="glass-input w-full text-sm cursor-pointer"
             >
               <option value="" className="bg-white text-slate-800">
@@ -286,6 +308,33 @@ const AddExpenseModal = ({
                   {g.name}
                 </option>
               ))}
+            </select>
+          </div>
+        )}
+
+        {/* Friend selector if not preselected and no group selected */}
+        {!selectedGroupId && !preselectedFriend && friends.length > 0 && (
+          <div>
+            <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+              Split with Friend (Optional)
+            </label>
+            <select
+              value={selectedFriendId}
+              onChange={(e) => setSelectedFriendId(e.target.value)}
+              className="glass-input w-full text-sm cursor-pointer"
+            >
+              <option value="" className="bg-white text-slate-800">
+                Choose a friend to split with...
+              </option>
+              {friends.map((f) => {
+                const friendObj = f.friend || f.user || f;
+                const fId = friendObj._id || friendObj.id;
+                return (
+                  <option key={fId} value={fId} className="bg-white text-slate-800">
+                    {friendObj.name} ({friendObj.email})
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}
