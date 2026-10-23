@@ -1,7 +1,7 @@
 {
-  "name": "spend-a-friend-server",
+  "name": "spend-a-friend-backend",
   "version": "1.0.0",
-  "description": "Backend API for Spend-A-Friend expense splitting app",
+  "description": "Backend API for Spend-A-Friend expense splitting app (Optimized for Render)",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,8 @@
     "splitwise",
     "express",
     "mongodb",
-    "nodejs"
+    "nodejs",
+    "render"
   ],
   "author": "",
   "license": "ISC"

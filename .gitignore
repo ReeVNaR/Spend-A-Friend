@@ -1,21 +1,26 @@
 # Dependencies
 node_modules/
-client/node_modules/
+frontend/node_modules/
+backend/node_modules/
 
 # Production / Build output
 dist/
-client/dist/
+frontend/dist/
 
 # Local Environment Variables
 .env
 .env.local
 .env.*.local
-*.env*
-server/.env
-client/.env
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+!*.env.example
+!**/.env.example
 
-# Vercel
+# Deployment / Platforms
 .vercel
+.render
 
 # Logs
 npm-debug.log*
