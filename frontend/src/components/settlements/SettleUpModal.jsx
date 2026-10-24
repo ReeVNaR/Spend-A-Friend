@@ -9,8 +9,12 @@ import {
   Calendar,
   QrCode,
   ExternalLink,
-  ArrowRightLeft,
+  Copy,
+  Check,
   Zap,
+  Smartphone,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 const SettleUpModal = ({
@@ -31,6 +35,7 @@ const SettleUpModal = ({
   const [currency, setCurrency] = useState(user?.defaultCurrency || 'INR');
   const [recipientUpiId, setRecipientUpiId] = useState('');
   const [showQrCode, setShowQrCode] = useState(false);
+  const [copiedUpi, setCopiedUpi] = useState(false);
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
@@ -90,32 +95,58 @@ const SettleUpModal = ({
       setAmount(initialAmt);
       setDirection('you_paid');
       setShowQrCode(false);
+      setCopiedUpi(false);
       setDate(new Date().toISOString().split('T')[0]);
       setNotes('');
     }
     wasOpenRef.current = isOpen;
   }, [isOpen, preselectedUser, preselectedAmount, candidates]);
 
-  // Generate UPI payment intent URI (only when you are paying and currency is INR)
-  const upiIntentUrl = useMemo(() => {
+  // Helper to build UPI URLs for specific apps
+  const getAppUpiUrl = (app) => {
     const numAmt = parseFloat(amount);
     const cleanUpi = recipientUpiId.trim();
-    if (
-      direction !== 'you_paid' ||
-      !cleanUpi ||
-      isNaN(numAmt) ||
-      numAmt <= 0 ||
-      currency !== 'INR'
-    ) {
-      return '';
-    }
+    if (!cleanUpi || isNaN(numAmt) || numAmt <= 0) return '#';
     const payeeName = selectedCandidate?.name || 'Friend';
-    return `upi://pay?pa=${encodeURIComponent(cleanUpi)}&pn=${encodeURIComponent(
+    const params = `pa=${encodeURIComponent(cleanUpi)}&pn=${encodeURIComponent(
       payeeName
     )}&am=${numAmt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
       'Spend-A-Friend Settlement'
     )}`;
-  }, [recipientUpiId, amount, currency, selectedCandidate, direction]);
+
+    switch (app) {
+      case 'gpay':
+        return `tez://upi/pay?${params}`;
+      case 'phonepe':
+        return `phonepe://upi/pay?${params}`;
+      case 'paytm':
+        return `paytmmp://upi/pay?${params}`;
+      default:
+        return `upi://pay?${params}`;
+    }
+  };
+
+  const handleAppClick = (e, app) => {
+    const numAmt = parseFloat(amount);
+    if (!recipientUpiId.trim()) {
+      e.preventDefault();
+      toast.error("Please enter recipient's UPI ID first");
+      return;
+    }
+    if (isNaN(numAmt) || numAmt <= 0) {
+      e.preventDefault();
+      toast.error('Please enter a valid payment amount first');
+      return;
+    }
+  };
+
+  const handleCopyUpi = () => {
+    if (!recipientUpiId.trim()) return;
+    navigator.clipboard.writeText(recipientUpiId.trim());
+    setCopiedUpi(true);
+    toast.success('UPI ID copied to clipboard!');
+    setTimeout(() => setCopiedUpi(false), 2000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -163,6 +194,8 @@ const SettleUpModal = ({
   const currencySymbol =
     currencies.find((c) => c.code === currency)?.symbol || '₹';
 
+  const defaultUpiUrl = getAppUpiUrl('default');
+
   return (
     <GlassModal isOpen={isOpen} onClose={onClose} title="Settle Up" size="md">
       <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-200">
@@ -171,7 +204,7 @@ const SettleUpModal = ({
           <button
             type="button"
             onClick={() => setDirection('you_paid')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               direction === 'you_paid'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -182,7 +215,7 @@ const SettleUpModal = ({
           <button
             type="button"
             onClick={() => setDirection('they_paid')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               direction === 'they_paid'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -261,81 +294,203 @@ const SettleUpModal = ({
           </div>
         </div>
 
-        {/* Instant UPI Payment Box (When You Paid, INR, and amount > 0) */}
+        {/* Premium UPI Payment Options Card (Active when You Paid in INR) */}
         {direction === 'you_paid' && currency === 'INR' && (
-          <div className="p-3.5 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-blue-50/40 border border-emerald-100/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
+          <div className="rounded-3xl p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl border border-slate-800/80 space-y-3.5 relative overflow-hidden">
+            {/* Ambient background glows */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header: Title & Amount badge */}
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
                   ₹
                 </div>
-                <span className="text-xs font-bold text-slate-900">
-                  Instant UPI Payment
-                </span>
+                <div>
+                  <div className="text-xs font-black text-white tracking-tight">
+                    Instant UPI Transfer
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-medium">
+                    Choose your preferred payment app
+                  </div>
+                </div>
               </div>
-              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded-full flex items-center space-x-1">
-                <Zap className="w-2.5 h-2.5" />
-                <span>GPay / PhonePe / Paytm</span>
-              </span>
+
+              {amount && Number(amount) > 0 && (
+                <div className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
+                  ₹{parseFloat(amount).toFixed(2)}
+                </div>
+              )}
             </div>
 
-            {/* Recipient UPI ID Input */}
-            <div className="space-y-1">
+            {/* Recipient UPI ID Input / Badge */}
+            <div className="space-y-1 relative z-10">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 font-medium">
+                <span className="text-slate-400 font-medium">
                   {selectedCandidate?.name || 'Recipient'}&apos;s UPI ID / VPA
                 </span>
-                {selectedCandidate?.upiId && (
-                  <span className="text-emerald-600 font-bold text-[10px]">
-                    Verified on file
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                placeholder="e.g. rahul@okhdfcbank or 9876543210@paytm"
-                value={recipientUpiId}
-                onChange={(e) => setRecipientUpiId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-slate-800 placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs"
-              />
-            </div>
-
-            {/* Pay Button & QR Toggle */}
-            {upiIntentUrl && (
-              <div className="space-y-2 pt-1 animate-in fade-in duration-200">
-                <div className="flex items-center space-x-2">
-                  <a
-                    href={upiIntentUrl}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <span>Pay ₹{parseFloat(amount || 0).toFixed(2)} via UPI App</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-
+                {recipientUpiId.trim() && (
                   <button
                     type="button"
-                    onClick={() => setShowQrCode(!showQrCode)}
-                    className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-95 transition-all shadow-2xs cursor-pointer"
-                    title="Toggle QR Code"
+                    onClick={handleCopyUpi}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center space-x-1 cursor-pointer"
                   >
-                    <QrCode className="w-4 h-4 text-emerald-600" />
+                    {copiedUpi ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy VPA</span>
+                      </>
+                    )}
                   </button>
-                </div>
+                )}
+              </div>
 
-                {/* QR Code Container */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="e.g. rahul@okhdfcbank or 9876543210@paytm"
+                  value={recipientUpiId}
+                  onChange={(e) => setRecipientUpiId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/15 text-xs font-mono font-bold text-white placeholder:font-sans placeholder:font-normal placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all shadow-inner"
+                />
+              </div>
+            </div>
+
+            {/* 4 Premium UPI App Cards */}
+            <div className="grid grid-cols-2 gap-2 relative z-10 pt-1">
+              {/* 1. Google Pay */}
+              <a
+                href={getAppUpiUrl('gpay')}
+                onClick={(e) => handleAppClick(e, 'gpay')}
+                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
+                  <svg viewBox="0 0 24 24" className="w-full h-full">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.43 7.34 24 12 24z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.92 0 12s.45 3.85 1.24 5.42l4.04-3.15z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.57 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                    />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">
+                    Google Pay
+                  </div>
+                  <div className="text-[9px] text-slate-400 truncate">
+                    Instant Pay
+                  </div>
+                </div>
+              </a>
+
+              {/* 2. PhonePe */}
+              <a
+                href={getAppUpiUrl('phonepe')}
+                onClick={(e) => handleAppClick(e, 'phonepe')}
+                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-sm group-hover:scale-105 transition-transform">
+                  पे
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">
+                    PhonePe
+                  </div>
+                  <div className="text-[9px] text-slate-400 truncate">
+                    Direct UPI
+                  </div>
+                </div>
+              </a>
+
+              {/* 3. Paytm */}
+              <a
+                href={getAppUpiUrl('paytm')}
+                onClick={(e) => handleAppClick(e, 'paytm')}
+                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#002970] to-[#00b9f5] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-[9px] tracking-tight group-hover:scale-105 transition-transform">
+                  Paytm
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">
+                    Paytm UPI
+                  </div>
+                  <div className="text-[9px] text-slate-400 truncate">
+                    Fast Checkout
+                  </div>
+                </div>
+              </a>
+
+              {/* 4. Any UPI / BHIM */}
+              <a
+                href={getAppUpiUrl('default')}
+                onClick={(e) => handleAppClick(e, 'default')}
+                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
+                  <svg viewBox="0 0 24 24" className="w-full h-full">
+                    <path fill="#097939" d="M14.5 4l-7 16h3.5l7-16z" />
+                    <path fill="#f47920" d="M9.5 4l-7 16h3.5l7-16z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">
+                    Any UPI App
+                  </div>
+                  <div className="text-[9px] text-slate-400 truncate">
+                    BHIM, CRED, Navi
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            {/* QR Code Toggle Action */}
+            {recipientUpiId.trim() && parseFloat(amount || 0) > 0 && (
+              <div className="pt-1 border-t border-white/10 relative z-10">
+                <button
+                  type="button"
+                  onClick={() => setShowQrCode(!showQrCode)}
+                  className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{showQrCode ? 'Hide QR Code' : 'Scan QR Code with Phone'}</span>
+                  {showQrCode ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
+
                 {showQrCode && (
-                  <div className="p-4 rounded-2xl bg-white border border-emerald-100 text-center space-y-2 animate-in zoom-in-95 duration-150">
+                  <div className="mt-2.5 p-3.5 rounded-2xl bg-white text-slate-900 text-center space-y-2 animate-in zoom-in-95 duration-150">
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(
-                        upiIntentUrl
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=170x170&margin=4&data=${encodeURIComponent(
+                        defaultUpiUrl
                       )}`}
                       alt="UPI QR Code"
-                      className="mx-auto rounded-xl border border-slate-100 shadow-sm"
-                      width={180}
-                      height={180}
+                      className="mx-auto rounded-xl border border-slate-200 shadow-sm"
+                      width={170}
+                      height={170}
                     />
-                    <div className="text-[11px] text-slate-500 font-medium">
-                      Scan with Google Pay, PhonePe, Paytm, or any UPI app
+                    <div className="text-[11px] text-slate-600 font-medium">
+                      Scan with Google Pay, PhonePe, Paytm, or any banking app
                     </div>
                   </div>
                 )}
