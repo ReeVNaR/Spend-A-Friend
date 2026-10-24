@@ -41,11 +41,11 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4 relative antialiased">
+    <div className="min-h-screen bg-white md:gradient-bg flex items-center justify-center p-4 relative antialiased">
       {/* Background glow orbs in Pure Blue */}
-      <div className="fixed top-[-10%] left-[-10%] w-[48vw] h-[48vw] rounded-full bg-sky-400/25 blur-[130px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[48vw] h-[48vw] rounded-full bg-blue-600/20 blur-[140px] pointer-events-none" />
-      <div className="fixed top-[40%] right-[15%] w-[32vw] h-[32vw] rounded-full bg-cyan-400/20 blur-[120px] pointer-events-none" />
+      <div className="hidden md:block fixed top-[-10%] left-[-10%] w-[48vw] h-[48vw] rounded-full bg-sky-400/25 blur-[130px] pointer-events-none" />
+      <div className="hidden md:block fixed bottom-[-10%] right-[-10%] w-[48vw] h-[48vw] rounded-full bg-blue-600/20 blur-[140px] pointer-events-none" />
+      <div className="hidden md:block fixed top-[40%] right-[15%] w-[32vw] h-[32vw] rounded-full bg-cyan-400/20 blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         <GlassCard className="p-8 sm:p-10 border-blue-100 shadow-2xl backdrop-blur-3xl">

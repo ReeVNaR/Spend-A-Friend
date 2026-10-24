@@ -67,22 +67,24 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* Mobile Top Brand Bar (< md) */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 px-4 py-2.5">
-        <div className="glass-strong rounded-2xl px-4 py-2 flex items-center justify-between border border-blue-100 shadow-md">
+      {/* Mobile Top Brand Bar (< md): Liquid Glass Floating Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-40 px-3.5 pt-3 pb-1">
+        <div className="liquid-glass-mobile rounded-2xl px-4 py-2.5 flex items-center justify-between border border-white/90">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-xl">💸</span>
-            <span className="font-bold text-base gradient-text">Spend-A-Friend</span>
+            <span className="font-extrabold text-base tracking-tight gradient-text">
+              Spend-A-Friend
+            </span>
           </Link>
-          <Link to="/settings">
+          <Link to="/settings" className="p-0.5 rounded-full ring-2 ring-white/90 shadow-2xs">
             <Avatar name={user?.name || 'User'} src={user?.avatar} size="xs" />
           </Link>
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar (< md) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pt-1">
-        <div className="glass-strong rounded-2xl px-2 py-2 flex items-center justify-around border border-blue-100 shadow-2xl backdrop-blur-2xl">
+      {/* Mobile Bottom Navigation Bar (< md): Liquid Glass Floating Dock */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3.5 pb-3.5 pt-1 pointer-events-none">
+        <div className="liquid-glass-mobile rounded-2xl px-1.5 py-1.5 flex items-center justify-around pointer-events-auto border border-white/90">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -91,15 +93,26 @@ const Navbar = () => {
                 to={item.path}
                 end={item.path === '/'}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-200 ${
+                  `flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-200 relative ${
                     isActive
-                      ? 'text-blue-600 bg-blue-50 shadow-xs font-bold scale-105'
-                      : 'text-slate-500 hover:text-blue-700'
+                      ? 'text-blue-600 font-bold bg-blue-50/90 shadow-2xs scale-[1.03] border border-blue-100/60'
+                      : 'text-slate-500 hover:text-slate-900 active:scale-95'
                   }`
                 }
               >
-                <Icon className="w-5 h-5 mb-0.5" />
-                <span className="text-[10px] tracking-tight">{item.name}</span>
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`w-5 h-5 mb-0.5 transition-transform duration-200 ${
+                        isActive ? 'scale-110 text-blue-600' : 'text-slate-500'
+                      }`}
+                    />
+                    <span className="text-[10px] tracking-tight">{item.name}</span>
+                    {isActive && (
+                      <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-blue-600 shadow-xs" />
+                    )}
+                  </>
+                )}
               </NavLink>
             );
           })}
