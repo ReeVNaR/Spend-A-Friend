@@ -232,6 +232,10 @@ const GroupDetailPage = () => {
     return expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   }, [expenses]);
 
+  const groupMemberUsers = useMemo(() => {
+    return group?.members?.map((m) => m.user || m) || [];
+  }, [group?.members]);
+
   if (loading && !group) {
     return (
       <div className="p-12 text-center text-xs text-slate-400 font-medium animate-pulse">
@@ -886,7 +890,7 @@ const GroupDetailPage = () => {
         preselectedUser={settleDebtTarget?.user}
         preselectedAmount={settleDebtTarget?.amount}
         groupId={group._id || group.id}
-        groupMembers={group.members?.map((m) => m.user || m)}
+        groupMembers={groupMemberUsers}
       />
 
       <AddMemberModal

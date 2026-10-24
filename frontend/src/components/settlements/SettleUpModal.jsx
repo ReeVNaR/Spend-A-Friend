@@ -1,19 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import GlassModal from '../ui/GlassModal';
-import GlassInput from '../ui/GlassInput';
 import GlassButton from '../ui/GlassButton';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { currencies } from '../../utils/currency';
 import {
-  DollarSign,
   Calendar,
   QrCode,
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
+  ArrowRightLeft,
   Zap,
 } from 'lucide-react';
 
@@ -30,6 +26,7 @@ const SettleUpModal = ({
   const { user } = useAuth();
 
   const [toUser, setToUser] = useState('');
+  const [direction, setDirection] = useState('you_paid'); // 'you_paid' | 'they_paid'
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState(user?.defaultCurrency || 'INR');
   const [recipientUpiId, setRecipientUpiId] = useState('');
@@ -38,18 +35,20 @@ const SettleUpModal = ({
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
 
-  // Combine available recipients (excluding current user)
+  const wasOpenRef = useRef(false);
+
+  // Combine available members/friends (excluding current user)
   const candidates = useMemo(() => {
     const list = [];
     const seen = new Set();
-    const currentId = user?._id || user?.id;
+    const currentId = String(user?._id || user?.id || '');
 
     const addCandidate = (cand) => {
       if (!cand) return;
       const u = cand.user || cand.friend || cand;
-      const uid = u._id || u.id;
-      if (uid && String(uid) !== String(currentId) && !seen.has(String(uid))) {
-        seen.add(String(uid));
+      const uid = String(u._id || u.id || '');
+      if (uid && uid !== currentId && !seen.has(uid)) {
+        seen.add(uid);
         list.push({
           _id: uid,
           name: u.name || 'User',
@@ -60,8 +59,8 @@ const SettleUpModal = ({
     };
 
     if (preselectedUser) addCandidate(preselectedUser);
-    groupMembers.forEach(addCandidate);
-    friends.forEach(addCandidate);
+    if (Array.isArray(groupMembers)) groupMembers.forEach(addCandidate);
+    if (Array.isArray(friends)) friends.forEach(addCandidate);
 
     return list;
   }, [preselectedUser, groupMembers, friends, user]);
@@ -71,39 +70,43 @@ const SettleUpModal = ({
     return candidates.find((c) => String(c._id) === String(toUser)) || null;
   }, [candidates, toUser]);
 
-  // Synchronize when modal opens
+  // Synchronize state ONLY when modal transitions from closed to open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
       if (preselectedUser) {
         const pId = preselectedUser._id || preselectedUser.id || preselectedUser;
-        setToUser(pId);
+        setToUser(String(pId));
         setRecipientUpiId(preselectedUser.upiId || '');
       } else if (candidates.length > 0) {
-        setToUser(candidates[0]._id || candidates[0].id);
+        setToUser(String(candidates[0]._id));
         setRecipientUpiId(candidates[0].upiId || '');
+      } else {
+        setToUser('');
+        setRecipientUpiId('');
       }
 
-      if (preselectedAmount) {
-        setAmount(String(Math.abs(Number(preselectedAmount))));
-      } else {
-        setAmount('');
-      }
+      const num = Number(preselectedAmount);
+      const initialAmt = !isNaN(num) && num > 0 ? String(Math.abs(num)) : '';
+      setAmount(initialAmt);
+      setDirection('you_paid');
       setShowQrCode(false);
+      setDate(new Date().toISOString().split('T')[0]);
+      setNotes('');
     }
+    wasOpenRef.current = isOpen;
   }, [isOpen, preselectedUser, preselectedAmount, candidates]);
 
-  // When recipient changes, update UPI ID if available
-  useEffect(() => {
-    if (selectedCandidate?.upiId) {
-      setRecipientUpiId(selectedCandidate.upiId);
-    }
-  }, [selectedCandidate]);
-
-  // Generate UPI payment intent URI
+  // Generate UPI payment intent URI (only when you are paying and currency is INR)
   const upiIntentUrl = useMemo(() => {
     const numAmt = parseFloat(amount);
     const cleanUpi = recipientUpiId.trim();
-    if (!cleanUpi || isNaN(numAmt) || numAmt <= 0 || currency !== 'INR') {
+    if (
+      direction !== 'you_paid' ||
+      !cleanUpi ||
+      isNaN(numAmt) ||
+      numAmt <= 0 ||
+      currency !== 'INR'
+    ) {
       return '';
     }
     const payeeName = selectedCandidate?.name || 'Friend';
@@ -112,14 +115,14 @@ const SettleUpModal = ({
     )}&am=${numAmt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
       'Spend-A-Friend Settlement'
     )}`;
-  }, [recipientUpiId, amount, currency, selectedCandidate]);
+  }, [recipientUpiId, amount, currency, selectedCandidate, direction]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
 
     if (!toUser) {
-      toast.error('Please select the recipient to settle up with');
+      toast.error('Please select a friend or group member');
       return;
     }
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -129,13 +132,16 @@ const SettleUpModal = ({
 
     setLoading(true);
     try {
+      const currentUid = user?._id || user?.id;
       const payload = {
-        to: toUser,
         amount: numAmount,
         currency,
         notes: notes.trim(),
         date: new Date(date).toISOString(),
+        from: direction === 'you_paid' ? currentUid : toUser,
+        to: direction === 'you_paid' ? toUser : currentUid,
       };
+
       if (groupId) {
         payload.group = groupId;
       }
@@ -154,22 +160,52 @@ const SettleUpModal = ({
     }
   };
 
+  const currencySymbol =
+    currencies.find((c) => c.code === currency)?.symbol || '₹';
+
   return (
     <GlassModal isOpen={isOpen} onClose={onClose} title="Settle Up" size="md">
       <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-200">
-        {/* Recipient Selector */}
-        <div>
-          <label className="text-xs font-bold text-slate-700 block mb-1.5">
-            Who are you paying?
+        {/* Payment Direction Switcher */}
+        <div className="flex items-center space-x-1.5 p-1 rounded-2xl bg-slate-100/90 border border-slate-200/60">
+          <button
+            type="button"
+            onClick={() => setDirection('you_paid')}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+              direction === 'you_paid'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            You Paid
+          </button>
+          <button
+            type="button"
+            onClick={() => setDirection('they_paid')}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+              direction === 'they_paid'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            They Paid You
+          </button>
+        </div>
+
+        {/* Person Selector */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-slate-700 block">
+            {direction === 'you_paid' ? 'Who did you pay?' : 'Who paid you?'}
           </label>
           <select
             value={toUser}
             onChange={(e) => {
-              setToUser(e.target.value);
-              const found = candidates.find((c) => String(c._id) === String(e.target.value));
+              const newUid = e.target.value;
+              setToUser(newUid);
+              const found = candidates.find((c) => String(c._id) === String(newUid));
               if (found) setRecipientUpiId(found.upiId || '');
             }}
-            className="w-full pl-3 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+            className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all cursor-pointer"
             required
           >
             {candidates.length === 0 ? (
@@ -186,26 +222,35 @@ const SettleUpModal = ({
 
         {/* Amount & Currency */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <GlassInput
-            label="Amount Paid"
-            type="number"
-            step="0.01"
-            min="0.01"
-            icon={DollarSign}
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">
+              Amount Paid <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none">
+                {currencySymbol}
+              </span>
+              <input
+                type="number"
+                step="any"
+                min="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all"
+              />
+            </div>
+          </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1.5">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">
               Currency
             </label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full pl-3 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+              className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all cursor-pointer"
             >
               {currencies.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -216,8 +261,8 @@ const SettleUpModal = ({
           </div>
         </div>
 
-        {/* Instant UPI Payment Box (Available for INR) */}
-        {currency === 'INR' && (
+        {/* Instant UPI Payment Box (When You Paid, INR, and amount > 0) */}
+        {direction === 'you_paid' && currency === 'INR' && (
           <div className="p-3.5 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-blue-50/40 border border-emerald-100/80 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-1.5">
@@ -270,7 +315,7 @@ const SettleUpModal = ({
                   <button
                     type="button"
                     onClick={() => setShowQrCode(!showQrCode)}
-                    className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-95 transition-all shadow-2xs"
+                    className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-95 transition-all shadow-2xs cursor-pointer"
                     title="Toggle QR Code"
                   >
                     <QrCode className="w-4 h-4 text-emerald-600" />
@@ -299,25 +344,33 @@ const SettleUpModal = ({
           </div>
         )}
 
-        {/* Date */}
-        <GlassInput
-          label="Date of Payment"
-          type="date"
-          icon={Calendar}
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-        />
+        {/* Date of Payment */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-slate-700 block">
+            Date of Payment
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+            className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all"
+          />
+        </div>
 
-        {/* Notes */}
-        <GlassInput
-          as="textarea"
-          rows={2}
-          label="Payment Method / Remarks (Optional)"
-          placeholder="e.g. Paid via Google Pay, UPI, Cash"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
+        {/* Payment Notes */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-slate-700 block">
+            Payment Method / Remarks (Optional)
+          </label>
+          <textarea
+            rows={2}
+            placeholder="e.g. Paid via Google Pay, UPI, Cash"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all"
+          />
+        </div>
 
         {/* Submit Actions - Sticky Bottom Toolbar */}
         <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 px-4 py-3 sm:px-6 bg-white/95 backdrop-blur-md border-t border-slate-100 flex items-center justify-end space-x-2.5 z-10 shadow-[0_-6px_20px_-4px_rgba(0,0,0,0.06)] mt-4">

@@ -102,6 +102,10 @@ router.get(
 router.post(
   '/',
   [
+    body('from')
+      .optional({ nullable: true, checkFalsy: true })
+      .isMongoId()
+      .withMessage('Invalid sender user ID'),
     body('to')
       .notEmpty()
       .withMessage('Recipient user ID (to) is required')
@@ -134,21 +138,35 @@ router.post(
   validateRequest,
   async (req, res, next) => {
     try {
-      const { to, amount, currency, group, date, notes } = req.body;
+      const { to, amount, currency, group, date, notes, from } = req.body;
       const currentUserId = req.user._id.toString();
 
-      if (to === currentUserId) {
+      const senderId = from ? from.toString() : currentUserId;
+      const recipientId = to.toString();
+
+      if (senderId === recipientId) {
         return res.status(400).json({
           success: false,
-          message: 'You cannot record a settlement payment to yourself',
+          message: 'Sender and recipient cannot be the same user',
         });
       }
 
-      const recipient = await User.findById(to);
-      if (!recipient) {
+      if (senderId !== currentUserId && recipientId !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only record settlements where you are either the payer or recipient',
+        });
+      }
+
+      const [senderDoc, recipientDoc] = await Promise.all([
+        User.findById(senderId),
+        User.findById(recipientId),
+      ]);
+
+      if (!senderDoc || !recipientDoc) {
         return res.status(404).json({
           success: false,
-          message: 'Recipient user not found',
+          message: 'Sender or recipient user not found',
         });
       }
 
@@ -161,14 +179,14 @@ router.post(
           });
         }
 
-        const currentIsMember = groupDoc.members.some(
-          (m) => getUserIdString(m.user) === currentUserId
+        const senderIsMember = groupDoc.members.some(
+          (m) => getUserIdString(m.user) === senderId
         );
         const recipientIsMember = groupDoc.members.some(
-          (m) => getUserIdString(m.user) === to
+          (m) => getUserIdString(m.user) === recipientId
         );
 
-        if (!currentIsMember || !recipientIsMember) {
+        if (!senderIsMember || !recipientIsMember) {
           return res.status(400).json({
             success: false,
             message: 'Both sender and recipient must be members of the group',
@@ -177,8 +195,8 @@ router.post(
       }
 
       const settlement = await Settlement.create({
-        from: req.user._id,
-        to,
+        from: senderId,
+        to: recipientId,
         amount: Number(amount),
         currency: currency ? currency.toUpperCase() : req.user.defaultCurrency || 'INR',
         group: group || null,
