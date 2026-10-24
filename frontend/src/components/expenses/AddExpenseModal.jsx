@@ -28,6 +28,7 @@ import {
   X,
   Smartphone,
   Zap,
+  AlertCircle,
 } from 'lucide-react';
 
 const AddExpenseModal = ({
@@ -65,21 +66,26 @@ const AddExpenseModal = ({
 
   // Handle scanned UPI QR details
   const handleScanSuccess = (parsed) => {
+    if (!parsed || !parsed.upiId) return;
     setScannedUpi(parsed);
     setRedirectedApp('');
     if (parsed.payeeName) {
       setDescription(parsed.payeeName);
     }
-    if (parsed.amount && parsed.amount > 0) {
+    if (parsed.amount && !isNaN(Number(parsed.amount)) && Number(parsed.amount) > 0) {
       setAmount(String(parsed.amount));
     }
     if (parsed.currency) {
       setCurrency(parsed.currency);
     }
-    const autoCat = detectCategoryFromPayee(parsed.payeeName, parsed.note);
-    setCategory(autoCat);
+    try {
+      const autoCat = detectCategoryFromPayee(parsed.payeeName, parsed.note);
+      if (autoCat) setCategory(autoCat);
+    } catch (e) {
+      console.warn('Category auto-detection warning:', e);
+    }
 
-    if (parsed.note && parsed.note !== 'Spend-A-Friend Expense') {
+    if (parsed.note && parsed.note !== 'Spend-A-Friend Expense' && parsed.note !== 'Spend-A-Friend Settlement') {
       setNotes((prev) => (prev ? `${prev} • ${parsed.note}` : parsed.note));
     }
   };
@@ -387,7 +393,7 @@ const AddExpenseModal = ({
               </div>
 
               <div className="flex items-center space-x-2 shrink-0">
-                {amount && Number(amount) > 0 && (
+                {amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 && (
                   <div className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
                     ₹{parseFloat(amount).toFixed(2)}
                   </div>
