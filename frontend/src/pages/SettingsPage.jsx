@@ -4,6 +4,7 @@ import useAuth from '../hooks/useAuth';
 import Avatar from '../components/ui/Avatar';
 import toast from 'react-hot-toast';
 import { currencies } from '../utils/currency';
+import api from '../api/axios';
 import {
   User,
   Mail,
@@ -14,17 +15,28 @@ import {
   ShieldCheck,
   ChevronRight,
   Info,
+  QrCode,
+  Zap,
+  KeyRound,
 } from 'lucide-react';
 
 const SettingsPage = () => {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Profile fields
   const [name, setName] = useState(user?.name || '');
   const [defaultCurrency, setDefaultCurrency] = useState(
     user?.defaultCurrency || 'INR'
   );
+  const [upiId, setUpiId] = useState(user?.upiId || '');
   const [loading, setLoading] = useState(false);
+
+  // Password fields
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -38,6 +50,7 @@ const SettingsPage = () => {
       await updateUser({
         name: name.trim(),
         defaultCurrency,
+        upiId: upiId.trim(),
       });
       toast.success('Profile updated successfully!');
     } catch (err) {
@@ -45,6 +58,42 @@ const SettingsPage = () => {
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    if (!currentPassword) {
+      toast.error('Please enter your current password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      await api.put('/auth/me', {
+        currentPassword,
+        newPassword,
+      });
+      toast.success('Password changed successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('Failed to change password:', err);
+      toast.error(err.response?.data?.message || 'Failed to change password');
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -96,7 +145,7 @@ const SettingsPage = () => {
           Settings & Profile ⚙️
         </h1>
         <p className="text-xs text-slate-400 font-medium mt-0.5">
-          Manage your account preferences and personal details
+          Manage your account preferences, payments, and security
         </p>
       </div>
 
@@ -174,6 +223,32 @@ const SettingsPage = () => {
             </div>
           </div>
 
+          {/* UPI ID / VPA */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700">
+                Your UPI ID / VPA (Optional)
+              </label>
+              <span className="text-[10px] text-emerald-600 font-bold flex items-center space-x-1">
+                <Zap className="w-2.5 h-2.5" />
+                <span>1-Tap Settlement</span>
+              </span>
+            </div>
+            <div className="relative">
+              <QrCode className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="e.g. rahul@okhdfcbank or 9876543210@paytm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all font-mono"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">
+              Friends can tap to pay you directly via Google Pay, PhonePe, or Paytm with prefilled amounts.
+            </p>
+          </div>
+
           {/* Default Currency */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 block">
@@ -202,7 +277,7 @@ const SettingsPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl py-2.5 px-6 font-bold text-xs shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl py-2.5 px-6 font-bold text-xs shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <span>Saving...</span>
@@ -217,7 +292,77 @@ const SettingsPage = () => {
         </form>
       </div>
 
-      {/* 5. App Information & About */}
+      {/* 5. Change Password Card */}
+      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <h3 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-50 flex items-center space-x-2">
+            <KeyRound className="w-4 h-4 text-blue-600" />
+            <span>Change Password</span>
+          </h3>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">
+              Current Password
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter current password"
+              required
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                required
+                minLength={6}
+                className="w-full px-4 py-2.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                required
+                minLength={6}
+                className="w-full px-4 py-2.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white shadow-2xs transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              disabled={pwLoading}
+              className="bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white rounded-2xl py-2.5 px-6 font-bold text-xs shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+            >
+              {pwLoading ? (
+                <span>Updating Password...</span>
+              ) : (
+                <span>Update Password</span>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* 6. App Information & About */}
       <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
         <h3 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-50 flex items-center space-x-2">
           <Info className="w-4 h-4 text-blue-600" />
@@ -230,7 +375,7 @@ const SettingsPage = () => {
         </div>
         <div className="flex items-center justify-between text-xs py-1">
           <span className="text-slate-500 font-medium">Version</span>
-          <span className="font-mono font-bold text-blue-600">v2.0.0</span>
+          <span className="font-mono font-bold text-blue-600">v2.1.0 (with UPI Pay)</span>
         </div>
         <div className="flex items-center justify-between text-xs py-1">
           <span className="text-slate-500 font-medium">Environment</span>
@@ -241,7 +386,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* 6. Logout / Danger Zone Card */}
+      {/* 7. Logout / Danger Zone Card */}
       <div className="bg-rose-50/50 rounded-3xl p-5 border border-rose-100/80 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -256,7 +401,7 @@ const SettingsPage = () => {
           <button
             type="button"
             onClick={logout}
-            className="bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl py-2.5 px-4 font-bold text-xs shadow-2xs active:scale-[0.98] transition-all flex items-center justify-center space-x-2 shrink-0"
+            className="bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl py-2.5 px-4 font-bold text-xs shadow-2xs active:scale-[0.98] transition-all flex items-center justify-center space-x-2 shrink-0 cursor-pointer"
           >
             <LogOut className="w-4 h-4 stroke-[2.5]" />
             <span>Log Out</span>

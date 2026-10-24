@@ -1,0 +1,18 @@
+{
+  "name": "Spend-A-Friend",
+  "short_name": "SpendAFriend",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "description": "Split Smart. Stay Close. Effortless shared expense splitting and instant settlements.",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

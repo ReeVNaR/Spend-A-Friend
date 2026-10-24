@@ -75,6 +75,7 @@ router.post(
           email: user.email,
           avatar: user.avatar,
           defaultCurrency: user.defaultCurrency,
+          upiId: user.upiId || '',
           createdAt: user.createdAt,
         },
       });
@@ -129,6 +130,7 @@ router.post(
           email: user.email,
           avatar: user.avatar,
           defaultCurrency: user.defaultCurrency,
+          upiId: user.upiId || '',
           createdAt: user.createdAt,
         },
       });
@@ -161,6 +163,7 @@ router.put(
       .isIn(['INR', 'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD'])
       .withMessage('Invalid default currency'),
     body('avatar').optional().trim(),
+    body('upiId').optional().trim(),
     body('currentPassword').optional(),
     body('newPassword')
       .optional()
@@ -178,11 +181,12 @@ router.put(
         });
       }
 
-      const { name, avatar, defaultCurrency, currentPassword, newPassword } = req.body;
+      const { name, avatar, defaultCurrency, upiId, currentPassword, newPassword } = req.body;
 
       if (name) user.name = name;
       if (avatar) user.avatar = avatar;
       if (defaultCurrency) user.defaultCurrency = defaultCurrency.toUpperCase();
+      if (upiId !== undefined) user.upiId = upiId.trim();
 
       // Password update handling
       if (newPassword) {
@@ -215,6 +219,7 @@ router.put(
           email: user.email,
           avatar: user.avatar,
           defaultCurrency: user.defaultCurrency,
+          upiId: user.upiId || '',
           createdAt: user.createdAt,
         },
       });

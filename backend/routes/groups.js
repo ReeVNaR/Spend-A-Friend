@@ -18,7 +18,7 @@ router.use(protect);
 router.get('/', async (req, res, next) => {
   try {
     const groups = await Group.find({ 'members.user': req.user._id })
-      .populate('members.user', 'name email avatar defaultCurrency')
+      .populate('members.user', 'name email avatar defaultCurrency upiId')
       .populate('createdBy', 'name email avatar')
       .sort({ createdAt: -1 });
 
@@ -87,7 +87,7 @@ router.post(
         ],
       });
 
-      await group.populate('members.user', 'name email avatar defaultCurrency');
+      await group.populate('members.user', 'name email avatar defaultCurrency upiId');
       await group.populate('createdBy', 'name email avatar');
 
       return res.status(201).json({
@@ -145,7 +145,7 @@ router.post(
       });
 
       await group.save();
-      await group.populate('members.user', 'name email avatar defaultCurrency');
+      await group.populate('members.user', 'name email avatar defaultCurrency upiId');
       await group.populate('createdBy', 'name email avatar');
 
       return res.status(200).json({
@@ -218,7 +218,7 @@ router.post(
       });
 
       await group.save();
-      await group.populate('members.user', 'name email avatar defaultCurrency');
+      await group.populate('members.user', 'name email avatar defaultCurrency upiId');
       await group.populate('createdBy', 'name email avatar');
 
       return res.status(200).json({
@@ -242,7 +242,7 @@ router.get(
   async (req, res, next) => {
     try {
       const group = await Group.findById(req.params.id)
-        .populate('members.user', 'name email avatar defaultCurrency')
+        .populate('members.user', 'name email avatar defaultCurrency upiId')
         .populate('createdBy', 'name email avatar');
 
       if (!group) {
@@ -333,7 +333,7 @@ router.put(
       if (typeof isSettled === 'boolean') group.isSettled = isSettled;
 
       await group.save();
-      await group.populate('members.user', 'name email avatar defaultCurrency');
+      await group.populate('members.user', 'name email avatar defaultCurrency upiId');
       await group.populate('createdBy', 'name email avatar');
 
       return res.status(200).json({
@@ -490,7 +490,7 @@ router.get(
   async (req, res, next) => {
     try {
       const group = await Group.findById(req.params.id)
-        .populate('members.user', 'name email avatar defaultCurrency');
+        .populate('members.user', 'name email avatar defaultCurrency upiId');
 
       if (!group) {
         return res.status(404).json({
@@ -532,6 +532,7 @@ router.get(
             name: m.user.name || 'User',
             email: m.user.email || '',
             avatar: m.user.avatar || '',
+            upiId: m.user.upiId || '',
           };
         }
       }

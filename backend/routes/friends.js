@@ -190,7 +190,7 @@ router.get('/', async (req, res, next) => {
 
     // Fetch friend profiles in 1 query
     const friends = await User.find({ _id: { $in: friendIds } })
-      .select('name email avatar defaultCurrency createdAt')
+      .select('name email avatar defaultCurrency upiId createdAt')
       .sort({ name: 1 })
       .lean();
 
@@ -533,7 +533,7 @@ router.get(
       }
 
       const friend = await User.findById(friendId)
-        .select('name email avatar defaultCurrency createdAt')
+        .select('name email avatar defaultCurrency upiId createdAt')
         .lean();
 
       if (!friend) {

@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema(
         message: '{VALUE} is not a supported currency',
       },
     },
+    upiId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
