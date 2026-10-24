@@ -155,42 +155,12 @@ const SettingsPage = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6 animate-in fade-in duration-300">
-      {/* 1. Mobile Brand Header */}
-      <div className="flex md:hidden items-center justify-between pt-1 pb-1">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white relative">
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path
-                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-                opacity="0.4"
-              />
-              <path d="M9 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2 0-6 1-6 3v2h12v-2c0-2-4-3-6-3z" />
-            </svg>
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white text-blue-600 font-extrabold text-[9px] flex items-center justify-center shadow-xs border border-blue-100">
-              ₹
-            </div>
-          </div>
-          <div>
-            <div className="text-base font-extrabold tracking-tight text-slate-900 leading-none">
-              Spend-A-<span className="text-blue-600">Friend</span>
-            </div>
-            <div className="text-[10px] text-slate-400 font-medium tracking-tight mt-0.5">
-              Split Smart. Stay Close.
-            </div>
-          </div>
-        </div>
-
-        <div className="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs border-2 border-white">
-          {userInitials}
-        </div>
-      </div>
-
-      {/* 2. Page Title */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-          Settings & Profile ⚙️
+      {/* 1. Page Title */}
+      <div className="pt-1">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          Settings &amp; Profile ⚙️
         </h1>
-        <p className="text-xs text-slate-400 font-medium mt-0.5">
+        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
           Manage your account preferences, payments, and security
         </p>
       </div>

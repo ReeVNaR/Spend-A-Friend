@@ -391,19 +391,19 @@ const AddExpenseModal = ({
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
         {/* Quick Scan UPI QR Banner (For new expenses) */}
         {!expenseToEdit && (
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-emerald-600/10 border border-blue-200/60 shadow-2xs flex items-center justify-between">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
             <div className="flex items-center space-x-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                 <QrCode className="w-5 h-5" />
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-black text-slate-900 flex items-center space-x-1.5 truncate">
                   <span>Scan Merchant UPI QR</span>
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-md shrink-0">
+                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md shrink-0">
                     Auto-Fill
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium truncate">
+                <div className="text-[10px] text-slate-400 font-medium truncate">
                   Scan bill to auto-fill payee, amount & launch GPay / PhonePe
                 </div>
               </div>
@@ -412,7 +412,7 @@ const AddExpenseModal = ({
             <button
               type="button"
               onClick={() => setShowScanner(true)}
-              className="shrink-0 py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer ml-2"
+              className="shrink-0 py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer ml-2"
             >
               <Camera className="w-3.5 h-3.5" />
               <span>Scan QR</span>
@@ -422,10 +422,7 @@ const AddExpenseModal = ({
 
         {/* Luxury Merchant UPI Payment & Instant Checkout Card */}
         {scannedUpi && (
-          <div className="rounded-3xl p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl border border-slate-800/80 space-y-3 relative overflow-hidden animate-in zoom-in-95 duration-200 w-full max-w-full">
-            {/* Ambient glows */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="rounded-3xl p-4 bg-slate-900 text-white shadow-xl border border-slate-800 space-y-3 relative overflow-hidden animate-in zoom-in-95 duration-200 w-full max-w-full">
 
             {/* Header: Payee Name + Live Amount + Dismiss */}
             <div className="flex items-center justify-between relative z-10">

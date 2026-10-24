@@ -53,7 +53,7 @@ const JoinGroupModal = ({ isOpen, onClose, onSuccess }) => {
           value={inviteCode}
           maxLength={8}
           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-          className="uppercase tracking-widest text-center font-mono font-bold text-violet-700"
+          className="uppercase tracking-widest text-center font-mono font-bold text-blue-600"
           required
         />
 

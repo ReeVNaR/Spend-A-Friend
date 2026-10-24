@@ -29,43 +29,43 @@ const ExpenseCard = ({ expense, currentUserId, onDelete }) => {
     if (lentAmount > 0) {
       statusText = 'You get back';
       userAmountDisplay = formatCurrency(lentAmount, expense.currency);
-      statusColor = 'text-sky-600';
+      statusColor = 'text-emerald-600';
     } else {
       statusText = 'You paid for yourself';
       userAmountDisplay = formatCurrency(expense.amount, expense.currency);
-      statusColor = 'text-slate-700';
+      statusColor = 'text-slate-800';
     }
   } else if (mySplit) {
     statusText = 'You owe';
     userAmountDisplay = formatCurrency(mySplit.amount, expense.currency);
-    statusColor = 'text-blue-800';
+    statusColor = 'text-rose-600';
   }
 
   const categoryEmoji = categoryIcons[expense.category] || '📦';
 
   return (
     <GlassCard
-      className="p-4 sm:p-5 transition-all duration-200 hover:border-blue-200 shadow-xs border-blue-100/70"
+      className="p-4 sm:p-5 transition-all duration-200 hover:border-slate-300 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.03)] border-slate-100/90"
       onClick={() => setExpanded(!expanded)}
       hover
     >
       <div className="flex items-center justify-between gap-3">
         {/* Left: Category Icon + Description & Info */}
         <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-          <div className="w-12 h-12 rounded-2xl glass-strong flex items-center justify-center text-2xl shrink-0 shadow-2xs border border-blue-100">
+          <div className="w-11 h-11 rounded-2xl bg-slate-50 flex items-center justify-center text-xl shrink-0 border border-slate-100">
             {categoryEmoji}
           </div>
 
           <div className="min-w-0">
-            <h4 className="text-base font-bold text-slate-900 truncate capitalize tracking-tight">
+            <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate capitalize tracking-tight">
               {expense.description}
             </h4>
-            <div className="flex items-center space-x-2 text-xs text-slate-500 mt-0.5 font-medium">
+            <div className="flex items-center space-x-2 text-xs text-slate-400 mt-0.5 font-medium">
               <span>{formatDate(expense.date || expense.createdAt)}</span>
               <span>•</span>
               <span className="truncate">
                 Paid by{' '}
-                <strong className="text-slate-800 font-semibold">
+                <strong className="text-slate-700 font-semibold">
                   {isPayer ? 'You' : payerName}
                 </strong>
               </span>
@@ -84,17 +84,17 @@ const ExpenseCard = ({ expense, currentUserId, onDelete }) => {
         {/* Right: Net Impact & Total */}
         <div className="flex items-center space-x-3 shrink-0">
           <div className="text-right">
-            <div className={`text-base font-extrabold ${statusColor}`}>
+            <div className={`text-sm sm:text-base font-extrabold ${statusColor}`}>
               {userAmountDisplay || formatCurrency(expense.amount, expense.currency)}
             </div>
-            <div className="text-xs text-slate-400 font-medium">{statusText}</div>
+            <div className="text-[11px] text-slate-400 font-medium">{statusText}</div>
           </div>
 
           <div className="text-slate-400">
             {expanded ? (
-              <ChevronUp className="w-5 h-5" />
+              <ChevronUp className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-5 h-5" />
+              <ChevronDown className="w-4 h-4" />
             )}
           </div>
         </div>
@@ -112,7 +112,7 @@ const ExpenseCard = ({ expense, currentUserId, onDelete }) => {
           </div>
 
           {expense.notes && (
-            <p className="text-xs text-slate-600 italic bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/70">
+            <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-xl border border-slate-100">
               "{expense.notes}"
             </p>
           )}
@@ -128,11 +128,11 @@ const ExpenseCard = ({ expense, currentUserId, onDelete }) => {
               return (
                 <div
                   key={s.user?._id || s.user || idx}
-                  className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-blue-50/40 border border-blue-100/50 text-xs"
+                  className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-100 text-xs"
                 >
                   <div className="flex items-center space-x-2">
                     <Avatar name={participantName} size="xs" />
-                    <span className={isMe ? 'font-bold text-blue-700' : 'text-slate-700 font-medium'}>
+                    <span className={isMe ? 'font-bold text-blue-600' : 'text-slate-700 font-medium'}>
                       {isMe ? 'You' : participantName}
                     </span>
                   </div>
@@ -150,7 +150,7 @@ const ExpenseCard = ({ expense, currentUserId, onDelete }) => {
               <button
                 type="button"
                 onClick={() => onDelete(expense._id || expense.id)}
-                className="text-xs text-blue-700 hover:text-blue-900 font-semibold flex items-center space-x-1 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                className="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center space-x-1 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Expense</span>

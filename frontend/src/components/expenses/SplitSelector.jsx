@@ -82,7 +82,7 @@ const SplitSelector = ({
   return (
     <div className="space-y-4">
       {/* Split Type Selector Pills */}
-      <div className="flex p-1 rounded-xl bg-blue-50/70 border border-blue-100 shadow-inner">
+      <div className="flex p-1 rounded-xl bg-slate-100 border border-slate-200/60">
         {splitTypes.map((st) => (
           <button
             key={st.id}
@@ -98,8 +98,8 @@ const SplitSelector = ({
             }}
             className={`flex-1 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 ${
               type === st.id
-                ? 'bg-blue-600 text-white shadow-xs scale-[1.02]'
-                : 'text-slate-500 hover:text-blue-700'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             {st.label}
@@ -109,13 +109,13 @@ const SplitSelector = ({
 
       {/* Summary / validation note */}
       <div className="flex items-center justify-between text-xs px-1 font-medium">
-        <span className="text-slate-500">
+        <span className="text-slate-400">
           Splitting between {splits.length} participant{splits.length === 1 ? '' : 's'}
         </span>
         {type === 'exact' && (
           <span
             className={`font-semibold ${
-              Math.abs(remainingAmount) < 0.01 ? 'text-sky-600' : 'text-blue-800'
+              Math.abs(remainingAmount) < 0.01 ? 'text-emerald-600' : 'text-rose-600'
             }`}
           >
             {Math.abs(remainingAmount) < 0.01
@@ -128,7 +128,7 @@ const SplitSelector = ({
         {type === 'percentage' && (
           <span
             className={`font-semibold ${
-              Math.abs(remainingPercentage) < 0.01 ? 'text-sky-600' : 'text-blue-800'
+              Math.abs(remainingPercentage) < 0.01 ? 'text-emerald-600' : 'text-rose-600'
             }`}
           >
             {Math.abs(remainingPercentage) < 0.01
@@ -137,7 +137,7 @@ const SplitSelector = ({
           </span>
         )}
         {type === 'equal' && splits.length > 0 && (
-          <span className="text-blue-700 font-bold">
+          <span className="text-blue-600 font-bold">
             {formatCurrency(
               Math.round((Number(totalAmount || 0) / splits.length) * 100) / 100,
               currency
@@ -162,8 +162,8 @@ const SplitSelector = ({
               key={mId}
               className={`flex items-center justify-between p-2.5 rounded-xl border transition-all duration-200 ${
                 isSelected
-                  ? 'glass bg-white/95 border-blue-200 shadow-2xs'
-                  : 'bg-blue-50/30 border-blue-100/60 opacity-65'
+                  ? 'bg-white border-slate-200 shadow-xs'
+                  : 'bg-slate-50 border-slate-100 opacity-60'
               }`}
             >
               {/* Member toggle item */}
@@ -175,7 +175,7 @@ const SplitSelector = ({
                   className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
                     isSelected
                       ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'border-blue-200 bg-white'
+                      : 'border-slate-300 bg-white'
                   }`}
                 >
                   {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}

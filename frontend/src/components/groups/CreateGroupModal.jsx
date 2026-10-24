@@ -91,8 +91,8 @@ const CreateGroupModal = ({ isOpen, onClose, onSuccess }) => {
                   onClick={() => setType(gt.id)}
                   className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-200 ${
                     isSelected
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/25 scale-[1.02]'
-                      : 'bg-white/70 border-blue-100 text-slate-600 hover:text-blue-700 hover:bg-blue-50/50'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-white border-slate-200/80 text-slate-600 hover:text-slate-900 hover:border-slate-300'
                   }`}
                 >
                   <Icon className="w-5 h-5 mb-1.5" />

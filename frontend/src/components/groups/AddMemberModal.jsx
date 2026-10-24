@@ -94,7 +94,7 @@ const AddMemberModal = ({
     <GlassModal isOpen={isOpen} onClose={onClose} title="Add Member to Group" size="md">
       <div className="space-y-5 animate-in fade-in duration-200">
         {/* Group Name Banner */}
-        <div className="flex items-center space-x-2.5 p-3 rounded-2xl bg-blue-50/70 border border-blue-100">
+        <div className="flex items-center space-x-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-100">
           <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
             <Users className="w-4 h-4" />
           </div>

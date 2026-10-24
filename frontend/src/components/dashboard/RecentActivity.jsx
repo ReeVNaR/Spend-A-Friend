@@ -84,7 +84,7 @@ const RecentActivity = ({
       </div>
 
       {/* White Activity Card */}
-      <div className="bg-white rounded-3xl p-2 sm:p-3 border border-slate-100 shadow-sm divide-y divide-slate-100">
+      <div className="bg-white rounded-3xl p-2 sm:p-2.5 border border-slate-200/80 shadow-[0_2px_12px_-2px_rgba(15,23,42,0.03)] divide-y divide-slate-100">
         {loading ? (
           <div className="p-8 text-center text-xs text-slate-400 font-medium animate-pulse">
             Loading recent transactions...

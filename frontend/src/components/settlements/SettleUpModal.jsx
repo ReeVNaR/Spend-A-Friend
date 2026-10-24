@@ -331,11 +331,7 @@ const SettleUpModal = ({
 
         {/* Premium UPI Payment Options Card (Active when You Paid in INR) */}
         {direction === 'you_paid' && currency === 'INR' && (
-          <div className="rounded-3xl p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl border border-slate-800/80 space-y-3.5 relative overflow-hidden">
-            {/* Ambient background glows */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
+          <div className="rounded-3xl p-4 bg-slate-900 text-white shadow-xl border border-slate-800 space-y-3.5 relative overflow-hidden">
             {/* Header: Title & Amount badge */}
             <div className="flex items-center justify-between relative z-10">
               <div className="flex items-center space-x-2">

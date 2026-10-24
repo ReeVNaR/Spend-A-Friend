@@ -99,71 +99,24 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300 w-full max-w-full overflow-x-hidden">
-      {/* 1. Mobile Top Brand Bar (Matches Uploaded Screenshot) */}
-      <div className="flex md:hidden items-center justify-between pt-1 pb-1">
-        <div className="flex items-center space-x-2.5">
-          {/* Spend-A-Friend Two-People Hugging Logo SVG */}
-          <div className="w-11 h-11 shrink-0">
-            <svg viewBox="0 0 48 48" fill="none" className="w-full h-full">
-              {/* Sparkles on top */}
-              <path d="M12 7L13.5 10.5M8 11L11 13M19 8L17.5 11" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
-              {/* Left Friend Figure */}
-              <circle cx="16" cy="18" r="4.5" fill="#2563eb" />
-              <path d="M8 34C8 28 12 24.5 17 24.5C18.5 24.5 20 25 21 26" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
-              <path d="M8 34C8 35 9 36 10 36H18" fill="#2563eb" />
-              {/* Right Friend Figure */}
-              <circle cx="32" cy="18" r="4.5" fill="#1d4ed8" />
-              <path d="M40 34C40 28 36 24.5 31 24.5C29.5 24.5 28 25 27 26" stroke="#1d4ed8" strokeWidth="3" strokeLinecap="round" />
-              <path d="M40 34C40 35 39 36 38 36H30" fill="#1d4ed8" />
-              {/* Torso Connection with Rupee Badge */}
-              <path d="M11 36C11 28.5 16 26 24 26C32 26 37 28.5 37 36H11Z" fill="url(#brandGrad)" />
-              <text x="24" y="33.5" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="900" fontFamily="system-ui, -apple-system, sans-serif">₹</text>
-              <defs>
-                <linearGradient id="brandGrad" x1="11" y1="26" x2="37" y2="36" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#2563eb" />
-                  <stop offset="1" stopColor="#1e40af" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <div>
-            <div className="text-[19px] font-black tracking-tight text-slate-900 leading-tight">
-              Spend-A-<span className="text-blue-600">Friend</span>
-            </div>
-            <div className="text-[11px] text-slate-400 font-medium tracking-tight">
-              Split Smart. Stay Close.
-            </div>
-          </div>
-        </div>
-
-        {/* User Initials Avatar Badge */}
-        <Link
-          to="/settings"
-          className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-blue-500/20 active:scale-95 transition-transform"
-          title="Account Settings"
-        >
-          {getInitials(user?.name)}
-        </Link>
-      </div>
-
-      {/* 2. Welcome Greeting */}
-      <div>
+      {/* 1. Welcome Greeting */}
+      <div className="pt-1">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
           Hey, <span className="text-blue-600 font-black">{firstName}</span>! 👋
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-          Here is your spending overview and group balances.
+          Here is your spending overview and balances.
         </p>
       </div>
 
-      {/* 3. Quick Action Cards (3-Column Row) */}
+      {/* 2. Quick Action Cards (3-Column Row) */}
       <QuickActions
         onAddExpense={() => setIsAddExpenseOpen(true)}
         onCreateGroup={() => setIsCreateGroupOpen(true)}
         onSettleUp={() => setIsSettleUpOpen(true)}
       />
 
-      {/* 4. Balance Summary Cards (You Owe, Owed to You, Total Net Balance) */}
+      {/* 3. Balance Summary Cards (Net Balance Hero + Side-by-Side Owe/Owed) */}
       <BalanceSummary
         youOwe={balanceData.youOwe}
         owedToYou={balanceData.owedToYou}
@@ -173,7 +126,7 @@ const DashboardPage = () => {
         onViewActivity={() => navigate('/activity')}
       />
 
-      {/* 5. Recent Activity List */}
+      {/* 4. Recent Activity List */}
       <RecentActivity
         expenses={recentExpenses}
         loading={loading}

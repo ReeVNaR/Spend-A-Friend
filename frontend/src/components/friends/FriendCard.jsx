@@ -31,7 +31,7 @@ const FriendCard = ({ friend, balance = 0, currency = 'INR' }) => {
     <GlassCard
       hover
       onClick={() => navigate(`/friends/${friendId}`)}
-      className="p-4 sm:p-5 flex items-center justify-between border-white/80 hover:border-violet-300 shadow-sm"
+      className="p-4 sm:p-5 flex items-center justify-between border border-slate-100/80 hover:border-slate-300 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.03)]"
     >
       {/* Left: Avatar + Details */}
       <div className="flex items-center space-x-3.5 min-w-0">

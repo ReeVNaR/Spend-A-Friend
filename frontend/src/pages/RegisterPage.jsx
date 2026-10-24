@@ -56,24 +56,20 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white md:gradient-bg flex items-center justify-center p-4 relative antialiased">
-      {/* Background glow orbs */}
-      <div className="hidden md:block fixed top-[-10%] right-[-10%] w-[48vw] h-[48vw] rounded-full bg-cyan-400/20 blur-[130px] pointer-events-none" />
-      <div className="hidden md:block fixed bottom-[-10%] left-[-10%] w-[48vw] h-[48vw] rounded-full bg-blue-600/20 blur-[140px] pointer-events-none" />
-
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 relative antialiased">
       <div className="w-full max-w-md relative z-10">
-        <GlassCard className="p-8 sm:p-10 border-blue-100 shadow-2xl backdrop-blur-3xl">
+        <GlassCard className="p-8 sm:p-10 border border-slate-100 shadow-[0_4px_24px_-4px_rgba(15,23,42,0.06)] rounded-3xl bg-white">
           {/* Logo & Headline */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-blue-600 mb-4 shadow-lg shadow-blue-500/30 text-white relative animate-pop">
-              <svg className="w-9 h-9 fill-current" viewBox="0 0 24 24">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4 shadow-lg shadow-blue-500/20 text-white relative">
+              <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
                 <path
                   d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
                   opacity="0.4"
                 />
                 <path d="M9 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2 0-6 1-6 3v2h12v-2c0-2-4-3-6-3z" />
               </svg>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white text-blue-600 font-black text-xs flex items-center justify-center shadow-md border-2 border-blue-50">
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white text-blue-600 font-black text-[10px] flex items-center justify-center shadow-sm border border-slate-100">
                 ₹
               </div>
             </div>
@@ -86,7 +82,7 @@ const RegisterPage = () => {
           </div>
 
           {error && (
-            <div className="p-3 mb-5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs text-center font-semibold">
+            <div className="p-3 mb-5 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 text-xs text-center font-semibold">
               {error}
             </div>
           )}

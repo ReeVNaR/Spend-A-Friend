@@ -404,41 +404,33 @@ const GroupDetailPage = () => {
         </div>
       </div>
 
-      {/* 3. User Balance in Group Card */}
-      <div
-        className={`rounded-3xl p-5 border shadow-sm relative overflow-hidden transition-all ${
-          isSettled
-            ? 'bg-white border-slate-100'
-            : youAreOwed
-            ? 'bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-white border-emerald-100'
-            : 'bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-white border-rose-100'
-        }`}
-      >
+      {/* 3. User Balance in Group Card (Pure White Luxury) */}
+      <div className="rounded-3xl p-5 bg-white border border-slate-200/80 shadow-[0_2px_12px_-2px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_20px_-3px_rgba(15,23,42,0.06)] relative overflow-hidden transition-all">
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-1">
-            <div className="flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider">
+            <div className="flex items-center space-x-1.5">
               {isSettled ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-slate-500">All Settled Up</span>
-                </>
+                <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] tracking-wider uppercase border border-slate-200/60">
+                  <CheckCircle2 className="w-3 h-3 text-slate-500" />
+                  <span>All Settled Up</span>
+                </span>
               ) : youAreOwed ? (
-                <>
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-700">You Are Owed In Group</span>
-                </>
+                <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] tracking-wider uppercase border border-emerald-100/60">
+                  <TrendingUp className="w-3 h-3 text-emerald-600" />
+                  <span>You Are Owed in Group</span>
+                </span>
               ) : (
-                <>
-                  <TrendingDown className="w-3.5 h-3.5 text-rose-600" />
-                  <span className="text-rose-700">You Owe In Group</span>
-                </>
+                <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold text-[10px] tracking-wider uppercase border border-rose-100/60">
+                  <TrendingDown className="w-3 h-3 text-rose-600" />
+                  <span>You Owe in Group</span>
+                </span>
               )}
             </div>
 
             <div
-              className={`text-2xl sm:text-3xl font-black tracking-tight ${
+              className={`text-2xl sm:text-3xl font-black tracking-tight pt-1 ${
                 isSettled
-                  ? 'text-slate-700'
+                  ? 'text-slate-900'
                   : youAreOwed
                   ? 'text-emerald-600'
                   : 'text-rose-600'
@@ -458,35 +450,6 @@ const GroupDetailPage = () => {
                 ? 'Group members owe you a total of this amount'
                 : 'You need to settle this amount with group members'}
             </p>
-          </div>
-
-          {/* Soundwave/Bar chart visual decoration */}
-          <div className="flex items-end space-x-1 h-10 opacity-30 shrink-0">
-            <span
-              className={`w-1 rounded-full ${
-                youAreOwed ? 'bg-emerald-500' : youOwe ? 'bg-rose-500' : 'bg-slate-400'
-              } h-4`}
-            />
-            <span
-              className={`w-1 rounded-full ${
-                youAreOwed ? 'bg-emerald-500' : youOwe ? 'bg-rose-500' : 'bg-slate-400'
-              } h-7`}
-            />
-            <span
-              className={`w-1 rounded-full ${
-                youAreOwed ? 'bg-emerald-500' : youOwe ? 'bg-rose-500' : 'bg-slate-400'
-              } h-10`}
-            />
-            <span
-              className={`w-1 rounded-full ${
-                youAreOwed ? 'bg-emerald-500' : youOwe ? 'bg-rose-500' : 'bg-slate-400'
-              } h-6`}
-            />
-            <span
-              className={`w-1 rounded-full ${
-                youAreOwed ? 'bg-emerald-500' : youOwe ? 'bg-rose-500' : 'bg-slate-400'
-              } h-3`}
-            />
           </div>
         </div>
       </div>

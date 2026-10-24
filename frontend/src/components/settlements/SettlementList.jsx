@@ -39,30 +39,30 @@ const SettlementList = ({
         return (
           <GlassCard
             key={settlement._id || settlement.id}
-            className="p-4 flex items-center justify-between border-blue-100/80 shadow-xs"
+            className="p-4 flex items-center justify-between border border-slate-100 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.03)] bg-white rounded-2xl"
           >
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <ArrowRightLeft className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                <ArrowRightLeft className="w-4 h-4" />
               </div>
 
               <div className="min-w-0">
                 <div className="flex items-center space-x-2 text-sm font-semibold text-slate-800 truncate">
-                  <span className={isFromMe ? 'text-blue-700 font-bold' : ''}>
+                  <span className={isFromMe ? 'text-blue-600 font-bold' : ''}>
                     {isFromMe ? 'You' : fromName}
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className={isToMe ? 'text-blue-700 font-bold' : ''}>
+                  <span className={isToMe ? 'text-blue-600 font-bold' : ''}>
                     {isToMe ? 'You' : toName}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mt-0.5">
+                <div className="flex items-center space-x-2 text-xs text-slate-400 font-medium mt-0.5">
                   <span>{formatDate(settlement.date || settlement.createdAt)}</span>
                   {settlement.notes && (
                     <>
                       <span>•</span>
-                      <span className="italic truncate text-slate-600">{settlement.notes}</span>
+                      <span className="italic truncate text-slate-500">{settlement.notes}</span>
                     </>
                   )}
                 </div>
@@ -70,7 +70,7 @@ const SettlementList = ({
             </div>
 
             <div className="text-right shrink-0">
-              <span className="text-base font-extrabold text-blue-600">
+              <span className="text-sm sm:text-base font-extrabold text-emerald-600">
                 +{formatCurrency(settlement.amount, settlement.currency)}
               </span>
               <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">

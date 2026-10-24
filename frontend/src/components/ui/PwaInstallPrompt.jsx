@@ -72,10 +72,10 @@ const PwaInstallPrompt = () => {
     <>
       {/* Floating Bottom Install Pill */}
       <div className="fixed bottom-20 md:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-40 animate-in slide-in-from-bottom-5 duration-300">
-        <div className="p-3.5 rounded-3xl bg-white/95 backdrop-blur-xl border border-blue-200/80 shadow-[0_16px_36px_-6px_rgba(15,23,42,0.14)] text-slate-900 flex items-center justify-between space-x-3">
+        <div className="p-3.5 rounded-3xl bg-white border border-slate-200/90 shadow-[0_12px_32px_-6px_rgba(15,23,42,0.12)] text-slate-900 flex items-center justify-between space-x-3">
           <div className="flex items-center space-x-3 min-w-0">
             {/* App Icon */}
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/25 p-1.5">
+            <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm p-1.5">
               <img
                 src="/icon-192.png"
                 alt="Spend-A-Friend"
@@ -86,11 +86,11 @@ const PwaInstallPrompt = () => {
             <div className="min-w-0">
               <div className="text-xs font-black text-slate-900 flex items-center space-x-1.5 truncate">
                 <span>Install Spend-A-Friend</span>
-                <span className="text-[9px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-md">
+                <span className="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded-md">
                   App
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+              <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
                 {isIOS
                   ? 'Add to home screen for native experience'
                   : 'Fast 1-tap launch & instant offline access'}
