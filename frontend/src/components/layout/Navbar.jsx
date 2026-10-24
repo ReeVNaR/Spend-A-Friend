@@ -67,21 +67,6 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* Mobile Top Brand Bar (< md): Liquid Glass Floating Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 px-3.5 pt-3 pb-1">
-        <div className="liquid-glass-mobile rounded-2xl px-4 py-2.5 flex items-center justify-between border border-white/90">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-xl">💸</span>
-            <span className="font-extrabold text-base tracking-tight gradient-text">
-              Spend-A-Friend
-            </span>
-          </Link>
-          <Link to="/settings" className="p-0.5 rounded-full ring-2 ring-white/90 shadow-2xs">
-            <Avatar name={user?.name || 'User'} src={user?.avatar} size="xs" />
-          </Link>
-        </div>
-      </header>
-
       {/* Mobile Bottom Navigation Bar (< md): Liquid Glass Floating Dock */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3.5 pb-3.5 pt-1 pointer-events-none">
         <div className="liquid-glass-mobile rounded-2xl px-1.5 py-1.5 flex items-center justify-around pointer-events-auto border border-white/90">
