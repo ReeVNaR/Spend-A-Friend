@@ -42,3 +42,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// Register PWA service worker for native installability and offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        console.log('Spend-A-Friend PWA active with scope:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('PWA service worker registration notice:', err);
+      });
+  });
+}

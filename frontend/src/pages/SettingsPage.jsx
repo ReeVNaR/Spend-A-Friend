@@ -18,6 +18,10 @@ import {
   QrCode,
   Zap,
   KeyRound,
+  Smartphone,
+  Download,
+  Share,
+  PlusSquare,
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -37,6 +41,48 @@ const SettingsPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+
+  // PWA install state
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
+
+  React.useEffect(() => {
+    const isStandaloneMode =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    setIsStandalone(isStandaloneMode);
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(userAgent) && !window.MSStream);
+
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleTriggerInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsStandalone(true);
+        toast.success('Spend-A-Friend installed successfully!');
+      }
+    } else if (isIOS) {
+      setShowIosGuide(true);
+    } else {
+      toast('To install: Tap your browser menu (⋮) and select "Install App" or "Add to Home Screen".');
+    }
+  };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -362,7 +408,131 @@ const SettingsPage = () => {
         </form>
       </div>
 
-      {/* 6. App Information & About */}
+      {/* 6. Native App Installation Card */}
+      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-50">
+          <div className="flex items-center space-x-2">
+            <Smartphone className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-bold text-slate-900">App Installation</h3>
+          </div>
+          {isStandalone ? (
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>Installed as App</span>
+            </span>
+          ) : (
+            <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded-full">
+              PWA Ready
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 p-2">
+            <img
+              src="/icon-192.png"
+              alt="Spend-A-Friend"
+              className="w-full h-full object-contain rounded-xl"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-bold text-slate-900 tracking-tight">
+              Spend-A-Friend Native App
+            </div>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              {isStandalone
+                ? 'You are running Spend-A-Friend as an installed standalone native application.'
+                : 'Install Spend-A-Friend directly on your phone or PC with offline caching.'}
+            </p>
+          </div>
+        </div>
+
+        {!isStandalone && (
+          <button
+            type="button"
+            onClick={handleTriggerInstall}
+            className="w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-xs transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Install Spend-A-Friend App</span>
+          </button>
+        )}
+      </div>
+
+      {/* iOS Guide Modal in Settings */}
+      {showIosGuide && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 text-slate-900 shadow-2xl border border-slate-100 space-y-4 animate-in slide-in-from-bottom-6 duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  📲
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Install on iPhone / iPad
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    2 simple steps to add to Home Screen
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowIosGuide(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-start space-x-2.5">
+                <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
+                  1
+                </div>
+                <div>
+                  <p className="font-bold text-slate-800">
+                    Tap the Share Button in Safari
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 flex items-center space-x-1">
+                    <span>Look for</span>
+                    <Share className="w-3.5 h-3.5 inline text-blue-600" />
+                    <span>in your browser menu bar.</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-start space-x-2.5">
+                <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
+                  2
+                </div>
+                <div>
+                  <p className="font-bold text-slate-800">
+                    Select &quot;Add to Home Screen&quot;
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 flex items-center space-x-1">
+                    <span>Scroll down and tap</span>
+                    <PlusSquare className="w-3.5 h-3.5 inline text-slate-700" />
+                    <span><strong>Add to Home Screen</strong>.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowIosGuide(false)}
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs active:scale-95 transition-all shadow-xs cursor-pointer"
+            >
+              Got It
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 7. App Information & About */}
       <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
         <h3 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-50 flex items-center space-x-2">
           <Info className="w-4 h-4 text-blue-600" />
