@@ -8,7 +8,7 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { currencies } from '../../utils/currency';
 import { categoryIcons, categoryLabels } from '../../utils/helpers';
-import { FileText, DollarSign, Calendar } from 'lucide-react';
+import { FileText, DollarSign, Calendar, CheckCircle2 } from 'lucide-react';
 
 const AddExpenseModal = ({
   isOpen,
@@ -19,6 +19,7 @@ const AddExpenseModal = ({
   groups = [],
   friends = [],
   groupMembers = null,
+  expenseToEdit = null,
 }) => {
   const { user } = useAuth();
 
@@ -26,19 +27,62 @@ const AddExpenseModal = ({
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState(user?.defaultCurrency || 'INR');
   const [category, setCategory] = useState('food');
-  const [selectedGroupId, setSelectedGroupId] = useState(
-    preselectedGroup?._id || preselectedGroup?.id || ''
-  );
-  const [selectedFriendId, setSelectedFriendId] = useState(
-    preselectedFriend?._id || preselectedFriend?.id || ''
-  );
-  const [paidBy, setPaidBy] = useState(user?._id || '');
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [selectedFriendId, setSelectedFriendId] = useState('');
+  const [paidBy, setPaidBy] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
-
   const [splitType, setSplitType] = useState('equal');
   const [splits, setSplits] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Sync state with expenseToEdit or preselected values
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (expenseToEdit) {
+      setDescription(expenseToEdit.description || '');
+      setAmount(expenseToEdit.amount ? String(expenseToEdit.amount) : '');
+      setCurrency(expenseToEdit.currency || user?.defaultCurrency || 'INR');
+      setCategory(expenseToEdit.category || 'food');
+      setSelectedGroupId(
+        expenseToEdit.group?._id || expenseToEdit.group?.id || expenseToEdit.group || ''
+      );
+      setPaidBy(
+        expenseToEdit.paidBy?._id || expenseToEdit.paidBy?.id || expenseToEdit.paidBy || user?._id || ''
+      );
+      if (expenseToEdit.date) {
+        setDate(new Date(expenseToEdit.date).toISOString().split('T')[0]);
+      } else if (expenseToEdit.createdAt) {
+        setDate(new Date(expenseToEdit.createdAt).toISOString().split('T')[0]);
+      }
+      setNotes(expenseToEdit.notes || '');
+      setSplitType(expenseToEdit.splitType || 'equal');
+      if (Array.isArray(expenseToEdit.splits)) {
+        setSplits(
+          expenseToEdit.splits.map((s) => ({
+            user: s.user?._id || s.user?.id || s.user,
+            amount: s.amount,
+            percentage: s.percentage,
+          }))
+        );
+      }
+    } else {
+      // New expense defaults
+      setDescription('');
+      setAmount('');
+      setCategory('food');
+      setDate(new Date().toISOString().split('T')[0]);
+      setNotes('');
+      setSplitType('equal');
+      setSelectedGroupId(preselectedGroup?._id || preselectedGroup?.id || '');
+      setSelectedFriendId(preselectedFriend?._id || preselectedFriend?.id || '');
+      setCurrency(
+        preselectedGroup?.currency || user?.defaultCurrency || 'INR'
+      );
+      setPaidBy(user?._id || '');
+    }
+  }, [isOpen, expenseToEdit, preselectedGroup, preselectedFriend, user]);
 
   // Determine active group object
   const activeGroup = useMemo(() => {
@@ -80,9 +124,9 @@ const AddExpenseModal = ({
     return [{ _id: user?._id, name: `${user?.name || 'You'} (You)` }];
   }, [groupMembers, activeGroup, chosenFriend, user]);
 
-  // Initialize splits whenever available members or amount changes
+  // Initialize splits for new expenses (only if not editing or splits are empty)
   useEffect(() => {
-    if (availableMembers.length > 0) {
+    if (!expenseToEdit && availableMembers.length > 0) {
       const numAmount = parseFloat(amount) || 0;
       const count = availableMembers.length;
       const share = count > 0 ? Math.round((numAmount / count) * 100) / 100 : 0;
@@ -96,21 +140,7 @@ const AddExpenseModal = ({
         }))
       );
     }
-  }, [availableMembers, amount]);
-
-  // Sync paidBy when user is loaded
-  useEffect(() => {
-    if (user?._id && !paidBy) {
-      setPaidBy(user._id);
-    }
-  }, [user, paidBy]);
-
-  // Sync group currency if active group has one
-  useEffect(() => {
-    if (activeGroup?.currency) {
-      setCurrency(activeGroup.currency);
-    }
-  }, [activeGroup]);
+  }, [availableMembers, amount, expenseToEdit]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -185,24 +215,35 @@ const AddExpenseModal = ({
 
     setLoading(true);
     try {
-      const res = await api.post('/expenses', payload);
-      toast.success('Expense added successfully!');
-      setDescription('');
-      setAmount('');
-      setNotes('');
-      onSuccess?.(res.data?.expense || res.data);
+      if (expenseToEdit) {
+        const res = await api.put(
+          `/expenses/${expenseToEdit._id || expenseToEdit.id}`,
+          payload
+        );
+        toast.success('Expense updated successfully!');
+        onSuccess?.(res.data?.expense || res.data);
+      } else {
+        const res = await api.post('/expenses', payload);
+        toast.success('Expense added successfully!');
+        onSuccess?.(res.data?.expense || res.data);
+      }
       onClose();
     } catch (err) {
-      console.error('Failed to add expense:', err);
-      toast.error(err.response?.data?.message || 'Failed to add expense');
+      console.error('Failed to save expense:', err);
+      toast.error(err.response?.data?.message || 'Failed to save expense');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <GlassModal isOpen={isOpen} onClose={onClose} title="Add New Expense" size="lg">
-      <form onSubmit={handleSubmit} className="space-y-5">
+    <GlassModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={expenseToEdit ? 'Edit Expense' : 'Add New Expense'}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
         {/* Description & Amount row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="sm:col-span-2">
@@ -282,8 +323,8 @@ const AddExpenseModal = ({
           </div>
         </div>
 
-        {/* Group selector if not preselected */}
-        {!preselectedGroup && groups.length > 0 && (
+        {/* Group selector if not preselected and not editing existing group expense */}
+        {!preselectedGroup && !expenseToEdit && groups.length > 0 && (
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1.5">
               Group (Optional)
@@ -313,7 +354,7 @@ const AddExpenseModal = ({
         )}
 
         {/* Friend selector if not preselected and no group selected */}
-        {!selectedGroupId && !preselectedFriend && friends.length > 0 && (
+        {!selectedGroupId && !preselectedFriend && !expenseToEdit && friends.length > 0 && (
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1.5">
               Split with Friend (Optional)
@@ -405,7 +446,7 @@ const AddExpenseModal = ({
             variant="primary"
             loading={loading}
           >
-            Save Expense
+            {expenseToEdit ? 'Save Changes' : 'Save Expense'}
           </GlassButton>
         </div>
       </form>

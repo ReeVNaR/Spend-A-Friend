@@ -21,10 +21,21 @@ const Navbar = () => {
       <header className="hidden md:block fixed top-0 left-0 right-0 z-40 px-6 py-3">
         <div className="max-w-7xl mx-auto glass-strong rounded-2xl px-6 py-3 flex items-center justify-between border border-blue-100 shadow-lg">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
-            <span className="text-2xl transition-transform group-hover:scale-110">💸</span>
-            <span className="font-extrabold text-xl tracking-tight gradient-text">
-              Spend-A-Friend
+          <Link to="/" className="flex items-center space-x-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white relative transition-transform group-hover:scale-105">
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                  opacity="0.4"
+                />
+                <path d="M9 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2 0-6 1-6 3v2h12v-2c0-2-4-3-6-3z" />
+              </svg>
+              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-white text-blue-600 font-extrabold text-[8px] flex items-center justify-center shadow-xs border border-blue-100">
+                ₹
+              </div>
+            </div>
+            <span className="font-extrabold text-lg tracking-tight text-slate-900">
+              Spend-A-<span className="text-blue-600">Friend</span>
             </span>
           </Link>
 

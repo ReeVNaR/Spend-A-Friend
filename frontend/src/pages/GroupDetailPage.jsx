@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import api from '../api/axios';
 import Avatar from '../components/ui/Avatar';
 import AddExpenseModal from '../components/expenses/AddExpenseModal';
 import SettleUpModal from '../components/settlements/SettleUpModal';
+import AddMemberModal from '../components/groups/AddMemberModal';
+import EditGroupModal from '../components/groups/EditGroupModal';
 import { formatCurrency } from '../utils/currency';
 import toast from 'react-hot-toast';
 import {
@@ -30,6 +32,10 @@ import {
   Car,
   ShoppingBag,
   ShoppingCart,
+  MoreVertical,
+  Pencil,
+  UserPlus,
+  LogOut,
 } from 'lucide-react';
 
 const categoryMap = {
@@ -60,11 +66,31 @@ const GroupDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('expenses');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
 
   // Modals state
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState(null);
   const [isSettleUpOpen, setIsSettleUpOpen] = useState(false);
   const [settleDebtTarget, setSettleDebtTarget] = useState(null);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [showMenu]);
 
   const fetchGroupData = useCallback(async () => {
     setLoading(true);
@@ -126,6 +152,43 @@ const GroupDetailPage = () => {
     }
   };
 
+  const handleLeaveGroup = async () => {
+    if (myNetBalance < -0.01) {
+      const proceed = window.confirm(
+        `You currently owe ${formatCurrency(Math.abs(myNetBalance), group.currency || 'INR')} in this group. It is strongly recommended to settle up before leaving. Are you sure you still want to leave?`
+      );
+      if (!proceed) return;
+    } else if (!window.confirm('Are you sure you want to leave this group?')) {
+      return;
+    }
+
+    try {
+      await api.post(`/groups/${id}/leave`);
+      toast.success('You left the group');
+      navigate('/groups');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to leave group');
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this group? All shared expenses and balances inside this group will be permanently removed.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.delete(`/groups/${id}`);
+      toast.success('Group deleted successfully');
+      navigate('/groups');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete group');
+    }
+  };
+
   const typeConfig = {
     trip: { label: 'Trip', icon: Compass, color: 'text-blue-600 bg-blue-50 border-blue-100' },
     home: { label: 'Home', icon: Home, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
@@ -138,6 +201,14 @@ const GroupDetailPage = () => {
 
   const currentUserId = user?._id || user?.id;
   const { simplifiedDebts = [], netBalances = {} } = balances;
+
+  const isAdmin = useMemo(() => {
+    if (!group || !currentUserId) return false;
+    if (String(group.createdBy?._id || group.createdBy) === String(currentUserId)) return true;
+    return group.members?.some(
+      (m) => String(m.user?._id || m.user?.id || m.user) === String(currentUserId) && m.role === 'admin'
+    );
+  }, [group, currentUserId]);
 
   const resolveUser = (userIdOrObj) => {
     if (!userIdOrObj) return { name: 'User' };
@@ -173,7 +244,7 @@ const GroupDetailPage = () => {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* 1. Top Bar with Back Button & Invite Code */}
+      {/* 1. Top Bar with Back Button, Invite Code, and Options Menu */}
       <div className="flex items-center justify-between pt-1">
         <button
           type="button"
@@ -207,6 +278,74 @@ const GroupDetailPage = () => {
             <TypeIcon className="w-3.5 h-3.5" />
             <span>{currentType.label}</span>
           </span>
+
+          {/* Group Options Dropdown */}
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-50 active:scale-95 transition-all shadow-2xs"
+              title="Group Options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-white border border-slate-100 shadow-xl py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150 divide-y divide-slate-50">
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      setIsEditGroupOpen(true);
+                    }}
+                    className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Edit Group Details</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    setIsAddMemberOpen(true);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Add Member</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    handleLeaveGroup();
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-bold text-amber-600 hover:bg-amber-50/50 flex items-center space-x-2"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Leave Group</span>
+                </button>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleDeleteGroup();
+                    }}
+                    className="w-full px-3.5 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50/50 flex items-center space-x-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Delete Group</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -352,8 +491,11 @@ const GroupDetailPage = () => {
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => setIsAddExpenseOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl py-3 px-4 font-bold text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center space-x-2"
+          onClick={() => {
+            setExpenseToEdit(null);
+            setIsAddExpenseOpen(true);
+          }}
+          className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl py-3 px-4 font-bold text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>Add Expense</span>
@@ -365,7 +507,7 @@ const GroupDetailPage = () => {
             setSettleDebtTarget(null);
             setIsSettleUpOpen(true);
           }}
-          className="bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-800 rounded-2xl py-3 px-4 font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-2"
+          className="bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-800 rounded-2xl py-3 px-4 font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
         >
           <ArrowRightLeft className="w-4 h-4 stroke-[2.5] text-slate-600" />
           <span>Settle Up</span>
@@ -439,8 +581,11 @@ const GroupDetailPage = () => {
               </p>
               <button
                 type="button"
-                onClick={() => setIsAddExpenseOpen(true)}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs hover:bg-blue-700 transition-all"
+                onClick={() => {
+                  setExpenseToEdit(null);
+                  setIsAddExpenseOpen(true);
+                }}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs hover:bg-blue-700 active:scale-95 transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add First Expense</span>
@@ -477,13 +622,10 @@ const GroupDetailPage = () => {
                 const cat = categoryMap[expense.category] || categoryMap.other;
                 const CatIcon = cat.icon;
 
-                const canDelete =
+                const canModify =
                   isPayer ||
                   String(expense.createdBy?._id || expense.createdBy) === String(currentUserId) ||
-                  group.createdBy === currentUserId ||
-                  group.members?.some(
-                    (m) => String(m.user?._id || m.user) === String(currentUserId) && m.role === 'admin'
-                  );
+                  isAdmin;
 
                 return (
                   <div
@@ -516,15 +658,28 @@ const GroupDetailPage = () => {
                         </div>
                       </div>
 
-                      {canDelete && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteExpense(expense._id || expense.id)}
-                          className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
-                          title="Delete Expense"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {canModify && (
+                        <div className="flex items-center space-x-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpenseToEdit(expense);
+                              setIsAddExpenseOpen(true);
+                            }}
+                            className="p-1.5 text-slate-300 hover:text-blue-600 active:scale-90 transition-all"
+                            title="Edit Expense"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExpense(expense._id || expense.id)}
+                            className="p-1.5 text-slate-300 hover:text-rose-500 active:scale-90 transition-all"
+                            title="Delete Expense"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -610,8 +765,8 @@ const GroupDetailPage = () => {
                         }}
                         className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                           isDebtorMe
-                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-xs active:scale-95'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95'
                         }`}
                       >
                         <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -628,77 +783,97 @@ const GroupDetailPage = () => {
 
       {/* Tab 3: Group Members */}
       {activeTab === 'members' && (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden">
-          {group.members?.map((memberObj, idx) => {
-            const memberUser = memberObj.user || memberObj;
-            const uid = String(memberUser._id || memberUser.id || memberUser);
-            const isMe = uid === String(currentUserId);
-            const net = Number(netBalances[uid] || 0);
-            const isMemberSettled = Math.abs(net) < 0.01;
-            const isMemberOwed = net > 0.01;
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-slate-600">
+              {group.members?.length || 0} Members in Group
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsAddMemberOpen(true)}
+              className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold transition-all active:scale-95 shadow-2xs"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Add Member</span>
+            </button>
+          </div>
 
-            return (
-              <div
-                key={uid || idx}
-                className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors"
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <Avatar
-                    name={memberUser.name || 'Member'}
-                    src={memberUser.avatar}
-                    size="md"
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                        {memberUser.name || 'Group Member'} {isMe && '(You)'}
-                      </span>
-                      {memberObj.role === 'admin' && (
-                        <span className="inline-flex items-center space-x-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-bold">
-                          <ShieldCheck className="w-2.5 h-2.5" />
-                          <span>Admin</span>
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden">
+            {group.members?.map((memberObj, idx) => {
+              const memberUser = memberObj.user || memberObj;
+              const uid = String(memberUser._id || memberUser.id || memberUser);
+              const isMe = uid === String(currentUserId);
+              const net = Number(netBalances[uid] || 0);
+              const isMemberSettled = Math.abs(net) < 0.01;
+              const isMemberOwed = net > 0.01;
+
+              return (
+                <div
+                  key={uid || idx}
+                  className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors"
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <Avatar
+                      name={memberUser.name || 'Member'}
+                      src={memberUser.avatar}
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          {memberUser.name || 'Group Member'} {isMe && '(You)'}
                         </span>
+                        {memberObj.role === 'admin' && (
+                          <span className="inline-flex items-center space-x-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-bold">
+                            <ShieldCheck className="w-2.5 h-2.5" />
+                            <span>Admin</span>
+                          </span>
+                        )}
+                      </div>
+                      {memberUser.email && (
+                        <p className="text-[11px] text-slate-400 truncate font-medium">
+                          {memberUser.email}
+                        </p>
                       )}
                     </div>
-                    {memberUser.email && (
-                      <p className="text-[11px] text-slate-400 truncate font-medium">
-                        {memberUser.email}
-                      </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    {isMemberSettled ? (
+                      <span className="text-xs text-slate-400 font-semibold">Settled</span>
+                    ) : isMemberOwed ? (
+                      <div>
+                        <div className="text-[10px] text-slate-400 font-medium">gets back</div>
+                        <div className="text-xs sm:text-sm font-black text-emerald-600">
+                          +{formatCurrency(net, group.currency || 'INR')}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-[10px] text-slate-400 font-medium">owes</div>
+                        <div className="text-xs sm:text-sm font-black text-rose-600">
+                          -{formatCurrency(Math.abs(net), group.currency || 'INR')}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
-
-                <div className="text-right shrink-0">
-                  {isMemberSettled ? (
-                    <span className="text-xs text-slate-400 font-semibold">Settled</span>
-                  ) : isMemberOwed ? (
-                    <div>
-                      <div className="text-[10px] text-slate-400 font-medium">gets back</div>
-                      <div className="text-xs sm:text-sm font-black text-emerald-600">
-                        +{formatCurrency(net, group.currency || 'INR')}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="text-[10px] text-slate-400 font-medium">owes</div>
-                      <div className="text-xs sm:text-sm font-black text-rose-600">
-                        -{formatCurrency(Math.abs(net), group.currency || 'INR')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* Modals */}
       <AddExpenseModal
         isOpen={isAddExpenseOpen}
-        onClose={() => setIsAddExpenseOpen(false)}
+        onClose={() => {
+          setIsAddExpenseOpen(false);
+          setExpenseToEdit(null);
+        }}
         onSuccess={() => fetchGroupData()}
         preselectedGroup={group}
+        expenseToEdit={expenseToEdit}
       />
 
       <SettleUpModal
@@ -712,6 +887,22 @@ const GroupDetailPage = () => {
         preselectedAmount={settleDebtTarget?.amount}
         groupId={group._id || group.id}
         groupMembers={group.members?.map((m) => m.user || m)}
+      />
+
+      <AddMemberModal
+        isOpen={isAddMemberOpen}
+        onClose={() => setIsAddMemberOpen(false)}
+        groupId={group._id || group.id}
+        groupName={group.name}
+        existingMembers={group.members || []}
+        onSuccess={() => fetchGroupData()}
+      />
+
+      <EditGroupModal
+        isOpen={isEditGroupOpen}
+        onClose={() => setIsEditGroupOpen(false)}
+        group={group}
+        onSuccess={() => fetchGroupData()}
       />
     </div>
   );

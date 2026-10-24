@@ -51,14 +51,23 @@ const LoginPage = () => {
         <GlassCard className="p-8 sm:p-10 border-blue-100 shadow-2xl backdrop-blur-3xl">
           {/* Logo & Headline */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass-strong mb-3 text-3xl shadow-sm border border-blue-100">
-              💸
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-blue-600 mb-4 shadow-lg shadow-blue-500/30 text-white relative animate-pop">
+              <svg className="w-9 h-9 fill-current" viewBox="0 0 24 24">
+                <path
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                  opacity="0.4"
+                />
+                <path d="M9 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2 0-6 1-6 3v2h12v-2c0-2-4-3-6-3z" />
+              </svg>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white text-blue-600 font-black text-xs flex items-center justify-center shadow-md border-2 border-blue-50">
+                ₹
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold gradient-text">
-              Spend-A-Friend
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Spend-A-<span className="text-blue-600">Friend</span>
             </h1>
-            <p className="text-sm text-slate-500 mt-1 font-medium">
-              Sign in to manage and split your group expenses
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 font-medium">
+              Split Smart. Stay Close.
             </p>
           </div>
 

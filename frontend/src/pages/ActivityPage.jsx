@@ -4,6 +4,7 @@ import useAuth from '../hooks/useAuth';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../utils/currency';
+import AddExpenseModal from '../components/expenses/AddExpenseModal';
 import {
   Search,
   Receipt,
@@ -12,6 +13,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   Trash2,
+  Pencil,
   Filter,
   X,
 } from 'lucide-react';
@@ -42,6 +44,10 @@ const ActivityPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Edit Expense modal
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState(null);
 
   const fetchActivity = useCallback(async () => {
     setLoading(true);
@@ -302,7 +308,7 @@ const ActivityPage = () => {
             const cat = categoryMap[expense.category] || categoryMap.other;
             const CatIcon = cat.icon;
 
-            const canDelete =
+            const canModify =
               isPayer ||
               String(expense.createdBy?._id || expense.createdBy) === String(currentUserId);
 
@@ -349,15 +355,28 @@ const ActivityPage = () => {
                     </div>
                   </div>
 
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteExpense(expense._id || expense.id)}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
-                      title="Delete Expense"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  {canModify && (
+                    <div className="flex items-center space-x-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpenseToEdit(expense);
+                          setIsAddExpenseOpen(true);
+                        }}
+                        className="p-1.5 text-slate-300 hover:text-blue-600 active:scale-90 transition-all"
+                        title="Edit Expense"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExpense(expense._id || expense.id)}
+                        className="p-1.5 text-slate-300 hover:text-rose-500 active:scale-90 transition-all"
+                        title="Delete Expense"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -365,6 +384,18 @@ const ActivityPage = () => {
           })}
         </div>
       )}
+
+      {/* Edit / Add Expense Modal */}
+      <AddExpenseModal
+        isOpen={isAddExpenseOpen}
+        onClose={() => {
+          setIsAddExpenseOpen(false);
+          setExpenseToEdit(null);
+        }}
+        onSuccess={() => fetchActivity()}
+        expenseToEdit={expenseToEdit}
+        groups={groups}
+      />
     </div>
   );
 };
