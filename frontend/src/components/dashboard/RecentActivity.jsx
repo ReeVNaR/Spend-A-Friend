@@ -55,41 +55,6 @@ const getExpenseSubtitle = (expense, currentUserId) => {
   return expense.paidBy?.name ? `paid by ${expense.paidBy.name}` : 'Shared Bill';
 };
 
-const defaultSampleExpenses = [
-  {
-    _id: 'sample-1',
-    description: 'Dinner at Cafe',
-    subtitle: 'with Aryan, Karan',
-    category: 'food',
-    dateText: 'Today, 8:45 PM',
-    amount: 240,
-  },
-  {
-    _id: 'sample-2',
-    description: 'Zomato Order',
-    subtitle: 'with Pratiksha',
-    category: 'shopping',
-    dateText: 'Yesterday',
-    amount: 120,
-  },
-  {
-    _id: 'sample-3',
-    description: 'Cab Fare',
-    subtitle: 'with College Group',
-    category: 'transport',
-    dateText: '20 Oct 2026',
-    amount: 80,
-  },
-  {
-    _id: 'sample-4',
-    description: 'Groceries',
-    subtitle: 'with Roommates',
-    category: 'utilities',
-    dateText: '18 Oct 2026',
-    amount: 150,
-  },
-];
-
 const RecentActivity = ({
   expenses = [],
   loading = false,
@@ -98,11 +63,7 @@ const RecentActivity = ({
 }) => {
   const navigate = useNavigate();
 
-  // If user has real expenses, display them; otherwise fallback to realistic sample rows so it matches mockup perfectly
-  const displayItems =
-    Array.isArray(expenses) && expenses.length > 0
-      ? expenses.slice(0, 6)
-      : defaultSampleExpenses;
+  const displayItems = Array.isArray(expenses) ? expenses.slice(0, 6) : [];
 
   return (
     <div className="space-y-3">
@@ -111,13 +72,15 @@ const RecentActivity = ({
         <h3 className="text-lg font-black text-slate-900 tracking-tight">
           Recent Activity
         </h3>
-        <Link
-          to="/activity"
-          className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-bold flex items-center space-x-1 group"
-        >
-          <span>View All</span>
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </Link>
+        {displayItems.length > 0 && (
+          <Link
+            to="/activity"
+            className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-bold flex items-center space-x-1 group"
+          >
+            <span>View All</span>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        )}
       </div>
 
       {/* White Activity Card */}
@@ -126,7 +89,7 @@ const RecentActivity = ({
           <div className="p-8 text-center text-xs text-slate-400 font-medium animate-pulse">
             Loading recent transactions...
           </div>
-        ) : (
+        ) : displayItems.length > 0 ? (
           displayItems.map((item) => {
             const cat = categoryMap[item.category] || categoryMap.other;
             const CatIcon = cat.icon;
@@ -137,13 +100,7 @@ const RecentActivity = ({
             return (
               <div
                 key={item._id || item.id}
-                onClick={() => {
-                  if (item._id && !item._id.startsWith('sample-')) {
-                    navigate('/activity');
-                  } else if (onAddExpense) {
-                    onAddExpense();
-                  }
-                }}
+                onClick={() => navigate('/activity')}
                 className="flex items-center justify-between p-3 sm:p-3.5 hover:bg-slate-50/60 rounded-2xl transition-colors cursor-pointer group"
               >
                 {/* Left: Icon & Title/Subtitle */}
@@ -169,7 +126,7 @@ const RecentActivity = ({
                     <div className="text-[11px] text-slate-400 font-medium leading-none">
                       {dateDisplay}
                     </div>
-                    <div className="text-sm font-extrabold text-rose-600 mt-1 leading-none">
+                    <div className="text-sm font-extrabold text-slate-900 mt-1 leading-none">
                       {formattedAmt}
                     </div>
                   </div>
@@ -178,6 +135,29 @@ const RecentActivity = ({
               </div>
             );
           })
+        ) : (
+          <div className="p-8 text-center space-y-2.5">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center">
+              <Receipt className="w-6 h-6 stroke-[2]" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-slate-800">
+                No recent activity yet
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5 max-w-xs mx-auto">
+                Shared expenses and settlements will appear here as you add them.
+              </p>
+            </div>
+            {onAddExpense && (
+              <button
+                type="button"
+                onClick={onAddExpense}
+                className="py-1.5 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs inline-flex items-center space-x-1 shadow-xs transition-all cursor-pointer mt-1"
+              >
+                <span>Add First Expense</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

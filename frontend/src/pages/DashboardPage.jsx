@@ -10,7 +10,7 @@ import CreateGroupModal from '../components/groups/CreateGroupModal';
 import SettleUpModal from '../components/settlements/SettleUpModal';
 
 const getInitials = (name) => {
-  if (!name) return 'RA';
+  if (!name) return 'U';
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -24,9 +24,9 @@ const DashboardPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [balanceData, setBalanceData] = useState({
-    youOwe: 340,
+    youOwe: 0,
     owedToYou: 0,
-    netBalance: -340,
+    netBalance: 0,
   });
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -37,7 +37,7 @@ const DashboardPage = () => {
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isSettleUpOpen, setIsSettleUpOpen] = useState(false);
 
-  const firstName = user?.name ? user.name.split(' ')[0] : 'Ranveer';
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Friend';
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
