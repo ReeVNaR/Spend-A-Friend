@@ -7,11 +7,13 @@ import UpiQrScanner from './UpiQrScanner';
 import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
+import QRCode from 'qrcode';
 import { currencies } from '../../utils/currency';
 import { categoryIcons, categoryLabels } from '../../utils/helpers';
 import {
   parseUpiUri,
   buildUpiDeepLink,
+  getAppLaunchUrl,
   detectCategoryFromPayee,
 } from '../../utils/upi';
 import {
@@ -29,6 +31,8 @@ import {
   Smartphone,
   Zap,
   AlertCircle,
+  Download,
+  Info,
 } from 'lucide-react';
 
 const AddExpenseModal = ({
@@ -63,12 +67,15 @@ const AddExpenseModal = ({
   const [scannedUpi, setScannedUpi] = useState(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [redirectedApp, setRedirectedApp] = useState('');
+  const [selectedAppPay, setSelectedAppPay] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState('');
 
   // Handle scanned UPI QR details
   const handleScanSuccess = (parsed) => {
     if (!parsed || !parsed.upiId) return;
     setScannedUpi(parsed);
     setRedirectedApp('');
+    setSelectedAppPay(null);
     if (parsed.payeeName) {
       setDescription(parsed.payeeName);
     }
@@ -90,6 +97,36 @@ const AddExpenseModal = ({
     }
   };
 
+  // Generate offline QR Code data URL when scanned UPI or amount changes
+  useEffect(() => {
+    if (!scannedUpi?.upiId) {
+      setQrDataUrl('');
+      return;
+    }
+
+    const upiUri = buildUpiDeepLink({
+      app: 'default',
+      upiId: scannedUpi.upiId,
+      payeeName: scannedUpi.payeeName,
+      amount: parseFloat(amount) || 0,
+      note: description || 'Spend-A-Friend Expense',
+      merchantCode: scannedUpi.merchantCode || '',
+      transactionRef: scannedUpi.transactionRef || '',
+      rawUri: scannedUpi.raw || '',
+    });
+
+    QRCode.toDataURL(upiUri, {
+      width: 240,
+      margin: 2,
+      color: {
+        dark: '#020617',
+        light: '#ffffff',
+      },
+    })
+      .then((url) => setQrDataUrl(url))
+      .catch((err) => console.warn('QR generation error:', err));
+  }, [scannedUpi, amount, description]);
+
   const handleCopyUpi = () => {
     if (!scannedUpi?.upiId) return;
     navigator.clipboard.writeText(scannedUpi.upiId.trim());
@@ -98,27 +135,42 @@ const AddExpenseModal = ({
     setTimeout(() => setCopiedUpi(false), 2000);
   };
 
-  const handleAppLaunch = (appName) => {
-    setRedirectedApp(appName);
-    toast.success(`Opening ${appName}... Complete payment and split below!`);
-  };
-
-  const handleCopyAndLaunchApp = (app, appName) => {
+  const handleAppCardClick = (app, appName) => {
     if (!scannedUpi?.upiId) return;
     navigator.clipboard.writeText(scannedUpi.upiId.trim());
     setCopiedUpi(true);
-    toast.success(`Copied! Search & paste in ${appName} to pay with zero limit.`);
-    setTimeout(() => setCopiedUpi(false), 2500);
+    setSelectedAppPay({ app, name: appName });
+    toast.success(`Copied ${scannedUpi.upiId.trim()}! Choose how to pay below.`);
+    setTimeout(() => setCopiedUpi(false), 3000);
+  };
 
-    const url = buildUpiDeepLink({
+  const getAppUpiUrl = (app) => {
+    if (!scannedUpi) return '#';
+    return buildUpiDeepLink({
       app,
       upiId: scannedUpi.upiId,
       payeeName: scannedUpi.payeeName,
       amount: parseFloat(amount) || 0,
       note: description || 'Spend-A-Friend Expense',
-      includeAmount: false,
+      merchantCode: scannedUpi.merchantCode || '',
+      transactionRef: scannedUpi.transactionRef || '',
+      rawUri: scannedUpi.raw || '',
     });
-    window.location.href = url;
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrDataUrl) {
+      toast.error('No QR available to download');
+      return;
+    }
+    const cleanName = (scannedUpi?.payeeName || 'Merchant').replace(/[^a-zA-Z0-9]/g, '_');
+    const link = document.createElement('a');
+    link.href = qrDataUrl;
+    link.download = `SpendAFriend-QR-${cleanName}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('QR saved to gallery! Scan from Google Pay/PhonePe gallery.');
   };
 
   // Sync state with expenseToEdit or preselected values
@@ -439,108 +491,76 @@ const AddExpenseModal = ({
             {/* 4 Premium UPI App Cards */}
             <div className="grid grid-cols-2 gap-2 relative z-10 pt-0.5 w-full max-w-full overflow-hidden">
               {/* 1. Google Pay */}
-              <a
-                href={buildUpiDeepLink({
-                  app: 'gpay',
-                  upiId: scannedUpi.upiId,
-                  payeeName: scannedUpi.payeeName,
-                  amount: parseFloat(amount) || 0,
-                  note: description || 'Spend-A-Friend Expense',
-                })}
-                onClick={() => handleAppLaunch('Google Pay')}
-                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
+              <button
+                type="button"
+                onClick={() => handleAppCardClick('gpay', 'Google Pay')}
+                className={`p-2.5 rounded-2xl border transition-all flex items-center space-x-2 group cursor-pointer text-left min-w-0 ${
+                  selectedAppPay?.app === 'gpay'
+                    ? 'bg-blue-600/30 border-blue-400'
+                    : 'bg-white/8 hover:bg-white/15 active:scale-95 border-white/10'
+                }`}
               >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
                   <svg viewBox="0 0 24 24" className="w-full h-full">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.43 7.34 24 12 24z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.92 0 12s.45 3.85 1.24 5.42l4.04-3.15z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.57 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.43 7.34 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.92 0 12s.45 3.85 1.24 5.42l4.04-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.57 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <div className="text-xs font-bold text-white truncate">
-                    Google Pay
-                  </div>
-                  <div className="text-[9px] text-slate-400 truncate">
-                    Instant Pay
-                  </div>
+                  <div className="text-xs font-bold text-white truncate">Google Pay</div>
+                  <div className="text-[9px] text-slate-400 truncate">Instant Pay</div>
                 </div>
-              </a>
+              </button>
 
               {/* 2. PhonePe */}
-              <a
-                href={buildUpiDeepLink({
-                  app: 'phonepe',
-                  upiId: scannedUpi.upiId,
-                  payeeName: scannedUpi.payeeName,
-                  amount: parseFloat(amount) || 0,
-                  note: description || 'Spend-A-Friend Expense',
-                })}
-                onClick={() => handleAppLaunch('PhonePe')}
-                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
+              <button
+                type="button"
+                onClick={() => handleAppCardClick('phonepe', 'PhonePe')}
+                className={`p-2.5 rounded-2xl border transition-all flex items-center space-x-2 group cursor-pointer text-left min-w-0 ${
+                  selectedAppPay?.app === 'phonepe'
+                    ? 'bg-purple-600/30 border-purple-400'
+                    : 'bg-white/8 hover:bg-white/15 active:scale-95 border-white/10'
+                }`}
               >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-xs sm:text-sm group-hover:scale-105 transition-transform">
                   पे
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <div className="text-xs font-bold text-white truncate">
-                    PhonePe
-                  </div>
-                  <div className="text-[9px] text-slate-400 truncate">
-                    Direct UPI
-                  </div>
+                  <div className="text-xs font-bold text-white truncate">PhonePe</div>
+                  <div className="text-[9px] text-slate-400 truncate">Direct UPI</div>
                 </div>
-              </a>
+              </button>
 
               {/* 3. Paytm */}
-              <a
-                href={buildUpiDeepLink({
-                  app: 'paytm',
-                  upiId: scannedUpi.upiId,
-                  payeeName: scannedUpi.payeeName,
-                  amount: parseFloat(amount) || 0,
-                  note: description || 'Spend-A-Friend Expense',
-                })}
-                onClick={() => handleAppLaunch('Paytm')}
-                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
+              <button
+                type="button"
+                onClick={() => handleAppCardClick('paytm', 'Paytm')}
+                className={`p-2.5 rounded-2xl border transition-all flex items-center space-x-2 group cursor-pointer text-left min-w-0 ${
+                  selectedAppPay?.app === 'paytm'
+                    ? 'bg-sky-600/30 border-sky-400'
+                    : 'bg-white/8 hover:bg-white/15 active:scale-95 border-white/10'
+                }`}
               >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-r from-[#002970] to-[#00b9f5] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-[8px] sm:text-[9px] tracking-tight group-hover:scale-105 transition-transform">
                   Paytm
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <div className="text-xs font-bold text-white truncate">
-                    Paytm UPI
-                  </div>
-                  <div className="text-[9px] text-slate-400 truncate">
-                    Fast Checkout
-                  </div>
+                  <div className="text-xs font-bold text-white truncate">Paytm UPI</div>
+                  <div className="text-[9px] text-slate-400 truncate">Fast Checkout</div>
                 </div>
-              </a>
+              </button>
 
               {/* 4. Any UPI App */}
-              <a
-                href={buildUpiDeepLink({
-                  app: 'default',
-                  upiId: scannedUpi.upiId,
-                  payeeName: scannedUpi.payeeName,
-                  amount: parseFloat(amount) || 0,
-                  note: description || 'Spend-A-Friend Expense',
-                })}
-                onClick={() => handleAppLaunch('UPI App')}
-                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
+              <button
+                type="button"
+                onClick={() => handleAppCardClick('default', 'UPI App')}
+                className={`p-2.5 rounded-2xl border transition-all flex items-center space-x-2 group cursor-pointer text-left min-w-0 ${
+                  selectedAppPay?.app === 'default'
+                    ? 'bg-emerald-600/30 border-emerald-400'
+                    : 'bg-white/8 hover:bg-white/15 active:scale-95 border-white/10'
+                }`}
               >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
                   <svg viewBox="0 0 24 24" className="w-full h-full">
@@ -549,49 +569,77 @@ const AddExpenseModal = ({
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <div className="text-xs font-bold text-white truncate">
-                    Any UPI App
-                  </div>
-                  <div className="text-[9px] text-slate-400 truncate">
-                    BHIM, CRED, Navi
-                  </div>
+                  <div className="text-xs font-bold text-white truncate">Any UPI App</div>
+                  <div className="text-[9px] text-slate-400 truncate">BHIM, CRED, Navi</div>
                 </div>
-              </a>
+              </button>
             </div>
 
-            {/* Limit Exceeded Helper Box */}
-            <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-white relative z-10 space-y-1.5 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 text-[11px] font-bold text-amber-300">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>Seeing &quot;Payment Limit Exceeded&quot;?</span>
+            {/* Selected App Action Drawer */}
+            {selectedAppPay && (
+              <div className="p-3.5 rounded-2xl bg-white/10 border border-white/20 space-y-3 relative z-10 animate-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-black text-white">
+                      Pay via {selectedAppPay.name}
+                    </span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-md flex items-center space-x-1">
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      <span>VPA Copied</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAppPay(null)}
+                    className="p-1 text-slate-400 hover:text-white text-xs cursor-pointer"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded-md">
-                  Bank Rule
-                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* Option 1: Native App Launch (Zero Bank Limits) */}
+                  <a
+                    href={getAppLaunchUrl(selectedAppPay.app)}
+                    className="p-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white text-xs font-bold flex items-center justify-center space-x-2 shadow-lg shadow-emerald-950/40 transition-all cursor-pointer text-center"
+                  >
+                    <Zap className="w-4 h-4 text-emerald-200 shrink-0" />
+                    <span>Open {selectedAppPay.name} &amp; Paste (No Limits)</span>
+                  </a>
+
+                  {/* Option 2: Direct UPI Link */}
+                  <a
+                    href={getAppUpiUrl(selectedAppPay.app)}
+                    className="p-3 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold flex items-center justify-center space-x-2 border border-white/15 transition-all cursor-pointer text-center"
+                  >
+                    <ExternalLink className="w-4 h-4 text-blue-300 shrink-0" />
+                    <span>Try Direct Deep Link</span>
+                  </a>
+                </div>
+
+                {qrDataUrl && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadQr}
+                    className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center space-x-1.5 border border-white/10 transition-all cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Save Scanned QR to Gallery (Scan in {selectedAppPay.name})</span>
+                  </button>
+                )}
+
+                <div className="text-[10px] text-slate-300 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5 space-y-1">
+                  <div className="flex items-center space-x-1.5 text-amber-300 font-bold">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    <span>Why does Direct Link show &quot;Limit Reached&quot;?</span>
+                  </div>
+                  <p>
+                    Indian banks block third-party browser links to personal handles (setting browser limit to ₹0).
+                    Tapping <strong>Open {selectedAppPay.name} &amp; Paste</strong> lets you paste in the search bar to pay with zero limit!
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] text-slate-300 leading-relaxed">
-                Indian banks cap browser-initiated transfers for personal accounts. Use <strong>Copy &amp; Open App</strong> to pay directly inside your app with <strong>zero limit</strong>:
-              </p>
-              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => handleCopyAndLaunchApp('gpay', 'Google Pay')}
-                  className="py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[10px] font-bold text-white flex items-center justify-center space-x-1 border border-white/15 transition-all cursor-pointer truncate"
-                >
-                  <Copy className="w-3 h-3 text-emerald-400 shrink-0" />
-                  <span className="truncate">Copy &amp; Open GPay</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleCopyAndLaunchApp('phonepe', 'PhonePe')}
-                  className="py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[10px] font-bold text-white flex items-center justify-center space-x-1 border border-white/15 transition-all cursor-pointer truncate"
-                >
-                  <Copy className="w-3 h-3 text-purple-400 shrink-0" />
-                  <span className="truncate">Copy &amp; Open PhonePe</span>
-                </button>
-              </div>
-            </div>
+            )}
 
             {/* Helper reassurance */}
             {redirectedApp ? (

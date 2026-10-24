@@ -55,6 +55,7 @@ export const parseUpiUri = (rawString = '') => {
       const currency = getParam('cu') || 'INR';
       const note = getParam('tn') || 'Spend-A-Friend Expense';
       const merchantCode = getParam('mc') || '';
+      const transactionRef = getParam('tr') || '';
 
       return {
         upiId,
@@ -63,6 +64,7 @@ export const parseUpiUri = (rawString = '') => {
         currency,
         note: note.replace(/\+/g, ' '),
         merchantCode,
+        transactionRef,
         raw: trimmed,
       };
     } catch (e) {
@@ -74,7 +76,9 @@ export const parseUpiUri = (rawString = '') => {
 };
 
 /**
- * Generate UPI App Deep Link URI with NPCI and PSP compliant parameters
+ * Generate UPI App Deep Link URI with strict NPCI compliance.
+ * - P2P (friend to friend): Clean URI with NO fake `tr`, preventing "exceeded limit" bank blocks.
+ * - P2M (merchants): Includes `mc` and `tr` as required by acquiring banks.
  */
 export const buildUpiDeepLink = ({
   app = 'default',
@@ -83,9 +87,31 @@ export const buildUpiDeepLink = ({
   amount = 0,
   note = 'Spend-A-Friend Settlement',
   merchantCode = '',
+  transactionRef = '',
   includeAmount = true,
+  rawUri = '',
 }) => {
-  if (!upiId) return '#';
+  if (!upiId && !rawUri) return '#';
+
+  // If we have a raw merchant URI from a scanned QR and no amount override needed
+  if (rawUri && rawUri.toLowerCase().includes('upi://pay?')) {
+    const numAmt = parseFloat(amount);
+    let target = rawUri;
+    if (includeAmount && !isNaN(numAmt) && numAmt > 0 && !rawUri.includes('am=')) {
+      target += `&am=${numAmt.toFixed(2)}`;
+    }
+    const queryString = target.split('?')[1] || '';
+    switch (app) {
+      case 'gpay':
+        return `tez://upi/pay?${queryString}`;
+      case 'phonepe':
+        return `phonepe://upi/pay?${queryString}`;
+      case 'paytm':
+        return `paytmmp://upi/pay?${queryString}`;
+      default:
+        return `upi://pay?${queryString}`;
+    }
+  }
 
   const numAmt = parseFloat(amount);
   const amtQuery =
@@ -93,25 +119,31 @@ export const buildUpiDeepLink = ({
       ? `&am=${numAmt.toFixed(2)}`
       : '';
 
-  // Clean payee name (NPCI & Google Pay require alphanumeric and spaces only, no brackets or special chars)
-  const cleanPayee = (payeeName || 'User')
+  // Clean payee name (NPCI requires alphanumeric and spaces only)
+  const cleanPayee = (payeeName || 'Friend')
     .replace(/[^a-zA-Z0-9 ]/g, '')
-    .trim() || 'User';
+    .trim() || 'Friend';
 
   const cleanNote = (note || 'Spend-A-Friend')
     .replace(/[^a-zA-Z0-9 ]/g, '')
     .trim()
     .slice(0, 30) || 'Settlement';
 
-  // Generate unique Transaction Reference ID required by Google Pay & UPI apps to prevent duplicate/limit errors
-  const tr = `SAF${Date.now()}${Math.floor(Math.random() * 1000)}`;
-
-  const cleanUpi = encodeURIComponent(upiId.trim());
+  const cleanUpi = encodeURIComponent(upiId ? upiId.trim() : '');
   const encodedName = encodeURIComponent(cleanPayee);
   const encodedNote = encodeURIComponent(cleanNote);
-  const mcQuery = merchantCode ? `&mc=${encodeURIComponent(merchantCode)}` : '';
 
-  const baseParams = `pa=${cleanUpi}&pn=${encodedName}${amtQuery}&cu=INR&tr=${tr}&tn=${encodedNote}${mcQuery}`;
+  // CRITICAL NPCI FIX:
+  // `tr` (Transaction Reference) and `mc` (Merchant Code) are EXCLUSIVELY for registered merchants.
+  // Including a fake `tr` on a personal P2P handle flags it as a spoofed merchant transaction,
+  // causing Google Pay to immediately reject it with "You have exceeded the limit for this payment"!
+  let merchantParams = '';
+  if (merchantCode) {
+    const tr = transactionRef || `SAF${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    merchantParams = `&mc=${encodeURIComponent(merchantCode)}&tr=${encodeURIComponent(tr)}`;
+  }
+
+  const baseParams = `pa=${cleanUpi}&pn=${encodedName}${amtQuery}&cu=INR&tn=${encodedNote}${merchantParams}`;
 
   switch (app) {
     case 'gpay':
@@ -122,6 +154,23 @@ export const buildUpiDeepLink = ({
       return `paytmmp://upi/pay?${baseParams}`;
     default:
       return `upi://pay?${baseParams}`;
+  }
+};
+
+/**
+ * Returns native Android app launch intents or URI schemes so user can paste UPI ID
+ * directly in-app, bypassing all web browser P2P intent blocks completely.
+ */
+export const getAppLaunchUrl = (app = 'gpay') => {
+  switch (app) {
+    case 'gpay':
+      return 'intent://#Intent;package=com.google.android.apps.nbu.paisa.user;scheme=https;end;';
+    case 'phonepe':
+      return 'intent://#Intent;package=com.phonepe.app;scheme=https;end;';
+    case 'paytm':
+      return 'intent://#Intent;package=net.one97.paytm;scheme=https;end;';
+    default:
+      return 'upi://pay';
   }
 };
 
