@@ -27,7 +27,7 @@ router.post(
   '/register',
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('email').trim().isEmail().withMessage('Valid email is required'),
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters long'),
@@ -40,9 +40,10 @@ router.post(
   async (req, res, next) => {
     try {
       const { name, email, password, defaultCurrency, avatar } = req.body;
+      const cleanEmail = (email || '').trim().toLowerCase();
 
       // Check if user already exists
-      const existingUser = await User.findOne({ email });
+      const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
         return res.status(400).json({
           success: false,
@@ -53,7 +54,7 @@ router.post(
       // Create new user (password is automatically hashed by pre-save hook)
       const userData = {
         name,
-        email,
+        email: cleanEmail,
         password,
       };
 
@@ -89,16 +90,17 @@ router.post(
 router.post(
   '/login',
   [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('email').trim().isEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   validateRequest,
   async (req, res, next) => {
     try {
       const { email, password } = req.body;
+      const cleanEmail = (email || '').trim().toLowerCase();
 
       // Find user and explicitly select password field
-      const user = await User.findOne({ email }).select('+password');
+      const user = await User.findOne({ email: cleanEmail }).select('+password');
       if (!user) {
         return res.status(401).json({
           success: false,

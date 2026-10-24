@@ -24,7 +24,7 @@ const ActivityPage = () => {
     setLoading(true);
     try {
       const [expRes, groupsRes] = await Promise.allSettled([
-        api.get('/expenses'),
+        api.get('/expenses?limit=100'),
         api.get('/groups'),
       ]);
 

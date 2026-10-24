@@ -116,6 +116,10 @@ groupSchema.methods.isMember = function (userId) {
   );
 };
 
+// Database indexes for fast member lookups
+groupSchema.index({ 'members.user': 1 });
+groupSchema.index({ createdBy: 1 });
+
 const Group = mongoose.models.Group || mongoose.model('Group', groupSchema);
 
 export default Group;

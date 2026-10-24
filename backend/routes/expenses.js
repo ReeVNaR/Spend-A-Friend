@@ -557,11 +557,24 @@ router.put(
         });
       }
 
-      // Only creator can update
-      if (getUserIdString(expense.createdBy) !== req.user._id.toString()) {
+      // Only creator, payer, or group admin can update
+      const currentUserId = req.user._id.toString();
+      const isCreator = getUserIdString(expense.createdBy) === currentUserId;
+      const isPayer = getUserIdString(expense.paidBy) === currentUserId;
+      let isGroupAdmin = false;
+      if (expense.group) {
+        const groupDoc = await Group.findById(expense.group);
+        if (groupDoc) {
+          isGroupAdmin = groupDoc.members.some(
+            (m) => getUserIdString(m.user) === currentUserId && m.role === 'admin'
+          );
+        }
+      }
+
+      if (!isCreator && !isPayer && !isGroupAdmin) {
         return res.status(403).json({
           success: false,
-          message: 'Only the creator of this expense can update it',
+          message: 'Only the creator, payer, or group admin can update this expense',
         });
       }
 
@@ -700,11 +713,23 @@ router.delete(
         });
       }
 
-      // Only creator can delete
-      if (getUserIdString(expense.createdBy) !== req.user._id.toString()) {
+      // Only creator, payer, or group admin can delete
+      const currentUserId = req.user._id.toString();
+      const isCreator = getUserIdString(expense.createdBy) === currentUserId;
+      const isPayer = getUserIdString(expense.paidBy) === currentUserId;
+      let isGroupAdmin = false;
+      if (expense.group) {
+        const groupDoc = await Group.findById(expense.group);
+        if (groupDoc) {
+          isGroupAdmin = groupDoc.members.some(
+            (m) => getUserIdString(m.user) === currentUserId && m.role === 'admin'
+          );
+        }
+      }
+      if (!isCreator && !isPayer && !isGroupAdmin) {
         return res.status(403).json({
           success: false,
-          message: 'Only the creator of this expense can delete it',
+          message: 'Only the creator, payer, or group admin can delete this expense',
         });
       }
 

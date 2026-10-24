@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import connectDB from './db.js';
 
@@ -18,6 +19,9 @@ import currencyRoutes from './routes/currency.js';
 import { errorHandler } from './middleware/error.js';
 
 const app = express();
+
+// Gzip/Brotli response compression for ultra-fast API payloads
+app.use(compression());
 
 // Middleware: CORS configuration
 const devAllowedOrigins = [

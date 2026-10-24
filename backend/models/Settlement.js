@@ -54,6 +54,8 @@ const settlementSchema = new mongoose.Schema(
 // Indexes
 settlementSchema.index({ group: 1, date: -1 });
 settlementSchema.index({ from: 1, to: 1 });
+settlementSchema.index({ from: 1 });
+settlementSchema.index({ to: 1 });
 
 const Settlement = mongoose.models.Settlement || mongoose.model('Settlement', settlementSchema);
 

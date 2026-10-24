@@ -127,6 +127,8 @@ expenseSchema.pre('validate', function (next) {
 expenseSchema.index({ group: 1, date: -1 });
 expenseSchema.index({ paidBy: 1 });
 expenseSchema.index({ 'splits.user': 1 });
+expenseSchema.index({ date: -1 });
+expenseSchema.index({ createdAt: -1 });
 
 const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema);
 

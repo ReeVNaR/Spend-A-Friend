@@ -16,6 +16,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Non-blocking pre-warm ping for serverless / Render free tier spin-up
+if (typeof window !== 'undefined') {
+  try {
+    fetch(`${baseURL}/health`).catch(() => {});
+  } catch {
+    // Ignore initial ping failures silently
+  }
+}
+
 // Request interceptor - attach token
 api.interceptors.request.use(
   (config) => {
