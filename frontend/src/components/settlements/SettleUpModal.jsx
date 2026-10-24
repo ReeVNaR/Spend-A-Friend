@@ -319,8 +319,8 @@ const SettleUpModal = ({
           onChange={(e) => setNotes(e.target.value)}
         />
 
-        {/* Submit Actions */}
-        <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+        {/* Submit Actions - Sticky Bottom Toolbar */}
+        <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 px-4 py-3 sm:px-6 bg-white/95 backdrop-blur-md border-t border-slate-100 flex items-center justify-end space-x-2.5 z-10 shadow-[0_-6px_20px_-4px_rgba(0,0,0,0.06)] mt-4">
           <GlassButton
             type="button"
             variant="secondary"
