@@ -247,7 +247,7 @@ const GroupDetailPage = () => {
   if (!group) return null;
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-5 animate-in fade-in duration-300 w-full max-w-full overflow-x-hidden">
       {/* 1. Top Bar with Back Button, Invite Code, and Options Menu */}
       <div className="flex items-center justify-between pt-1">
         <button

@@ -198,7 +198,7 @@ const SettleUpModal = ({
 
   return (
     <GlassModal isOpen={isOpen} onClose={onClose} title="Settle Up" size="md">
-      <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-200">
+      <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
         {/* Payment Direction Switcher */}
         <div className="flex items-center space-x-1.5 p-1 rounded-2xl bg-slate-100/90 border border-slate-200/60">
           <button
@@ -363,14 +363,14 @@ const SettleUpModal = ({
             </div>
 
             {/* 4 Premium UPI App Cards */}
-            <div className="grid grid-cols-2 gap-2 relative z-10 pt-1">
+            <div className="grid grid-cols-2 gap-2 relative z-10 pt-1 w-full max-w-full overflow-hidden">
               {/* 1. Google Pay */}
               <a
                 href={getAppUpiUrl('gpay')}
                 onClick={(e) => handleAppClick(e, 'gpay')}
-                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
               >
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
                   <svg viewBox="0 0 24 24" className="w-full h-full">
                     <path
                       fill="#4285F4"
@@ -390,7 +390,7 @@ const SettleUpModal = ({
                     />
                   </svg>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="text-xs font-bold text-white truncate">
                     Google Pay
                   </div>
@@ -404,12 +404,12 @@ const SettleUpModal = ({
               <a
                 href={getAppUpiUrl('phonepe')}
                 onClick={(e) => handleAppClick(e, 'phonepe')}
-                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
               >
-                <div className="w-9 h-9 rounded-xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-sm group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#5f259f] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-xs sm:text-sm group-hover:scale-105 transition-transform">
                   पे
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="text-xs font-bold text-white truncate">
                     PhonePe
                   </div>
@@ -423,12 +423,12 @@ const SettleUpModal = ({
               <a
                 href={getAppUpiUrl('paytm')}
                 onClick={(e) => handleAppClick(e, 'paytm')}
-                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
               >
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#002970] to-[#00b9f5] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-[9px] tracking-tight group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-r from-[#002970] to-[#00b9f5] flex items-center justify-center shrink-0 shadow-xs text-white font-black text-[8px] sm:text-[9px] tracking-tight group-hover:scale-105 transition-transform">
                   Paytm
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="text-xs font-bold text-white truncate">
                     Paytm UPI
                   </div>
@@ -442,15 +442,15 @@ const SettleUpModal = ({
               <a
                 href={getAppUpiUrl('default')}
                 onClick={(e) => handleAppClick(e, 'default')}
-                className="p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2.5 group cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-2xl bg-white/8 hover:bg-white/15 active:scale-95 border border-white/10 transition-all flex items-center space-x-2 group cursor-pointer min-w-0 overflow-hidden"
               >
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-xs p-1.5 group-hover:scale-105 transition-transform">
                   <svg viewBox="0 0 24 24" className="w-full h-full">
                     <path fill="#097939" d="M14.5 4l-7 16h3.5l7-16z" />
                     <path fill="#f47920" d="M9.5 4l-7 16h3.5l7-16z" />
                   </svg>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="text-xs font-bold text-white truncate">
                     Any UPI App
                   </div>
@@ -528,7 +528,7 @@ const SettleUpModal = ({
         </div>
 
         {/* Submit Actions - Sticky Bottom Toolbar */}
-        <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 px-4 py-3 sm:px-6 bg-white/95 backdrop-blur-md border-t border-slate-100 flex items-center justify-end space-x-2.5 z-10 shadow-[0_-6px_20px_-4px_rgba(0,0,0,0.06)] mt-4">
+        <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 px-4 py-3 sm:px-6 bg-white/95 backdrop-blur-md border-t border-slate-100 flex items-center justify-end space-x-2.5 z-10 shadow-[0_-6px_20px_-4px_rgba(0,0,0,0.06)] mt-4 box-border w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] max-w-[calc(100%+2rem)] sm:max-w-[calc(100%+3rem)]">
           <GlassButton
             type="button"
             variant="secondary"

@@ -98,7 +98,7 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-5 animate-in fade-in duration-300 w-full max-w-full overflow-x-hidden">
       {/* 1. Mobile Top Brand Bar (Matches Uploaded Screenshot) */}
       <div className="flex md:hidden items-center justify-between pt-1 pb-1">
         <div className="flex items-center space-x-2.5">

@@ -37,7 +37,7 @@ const GlassModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pb-8 sm:pb-4 overflow-y-auto bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pb-8 sm:pb-4 overflow-y-auto overflow-x-hidden bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 w-full max-w-full"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose?.();
@@ -47,7 +47,7 @@ const GlassModal = ({
       <div
         className={`bg-white rounded-3xl w-full ${
           sizeClasses[size] || sizeClasses.md
-        } max-h-[84dvh] sm:max-h-[88vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800`}
+        } max-h-[84dvh] sm:max-h-[88vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800 max-w-full`}
       >
         {/* Title Bar */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 shrink-0 bg-white">
@@ -65,7 +65,7 @@ const GlassModal = ({
         </div>
 
         {/* Content area */}
-        <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 relative">
+        <div className="p-4 sm:p-6 overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 relative w-full max-w-full">
           {children}
         </div>
       </div>
