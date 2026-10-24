@@ -2,17 +2,39 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import api from '../api/axios';
-import GlassCard from '../components/ui/GlassCard';
-import GlassButton from '../components/ui/GlassButton';
 import Avatar from '../components/ui/Avatar';
-import Loading from '../components/ui/Loading';
-import ExpenseList from '../components/expenses/ExpenseList';
-import SettlementList from '../components/settlements/SettlementList';
 import AddExpenseModal from '../components/expenses/AddExpenseModal';
 import SettleUpModal from '../components/settlements/SettleUpModal';
 import { formatCurrency } from '../utils/currency';
 import toast from 'react-hot-toast';
-import { Plus, ArrowRightLeft, Receipt, Clock, ChevronLeft } from 'lucide-react';
+import {
+  ChevronLeft,
+  Plus,
+  ArrowRightLeft,
+  Receipt,
+  Utensils,
+  ShoppingBag,
+  Car,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  CheckCircle2,
+  Trash2,
+} from 'lucide-react';
+
+const categoryMap = {
+  food: { icon: Utensils, bg: 'bg-amber-50', text: 'text-amber-500' },
+  transport: { icon: Car, bg: 'bg-blue-50', text: 'text-blue-600' },
+  shopping: { icon: ShoppingBag, bg: 'bg-rose-50', text: 'text-rose-500' },
+  utilities: { icon: ShoppingCart, bg: 'bg-emerald-50', text: 'text-emerald-600' },
+  other: { icon: Receipt, bg: 'bg-slate-50', text: 'text-slate-600' },
+};
+
+const formatItemDate = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
 
 const FriendDetailPage = () => {
   const { id } = useParams();
@@ -87,151 +109,258 @@ const FriendDetailPage = () => {
     }
   };
 
-  if (loading && !friend) {
-    return <Loading fullScreen text="Loading friend..." />;
-  }
-
-  if (!friend) return null;
-
-  const currentUserId = user?._id || user?.id;
   const numBalance = Number(balance) || 0;
   const isSettled = Math.abs(numBalance) < 0.01;
   const friendOwesYou = numBalance > 0.01;
   const youOweFriend = numBalance < -0.01;
 
+  if (loading && !friend) {
+    return (
+      <div className="p-12 text-center text-xs text-slate-400 font-medium animate-pulse">
+        Loading friend details...
+      </div>
+    );
+  }
+
+  if (!friend) return null;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Back button */}
-      <button
-        type="button"
-        onClick={() => navigate('/friends')}
-        className="flex items-center space-x-1.5 text-xs text-slate-500 hover:text-blue-700 transition-colors font-semibold"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        <span>Back to Friends</span>
-      </button>
-
-      {/* Friend Header Card */}
-      <GlassCard className="p-6 sm:p-8 border-blue-100 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center space-x-4">
-            <Avatar name={friend.name} src={friend.avatar} size="lg" />
-            <div>
-              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{friend.name}</h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">{friend.email}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <GlassButton
-              variant="secondary"
-              size="md"
-              icon={ArrowRightLeft}
-              onClick={() => setIsSettleUpOpen(true)}
-            >
-              Settle Up
-            </GlassButton>
-            <GlassButton
-              variant="primary"
-              size="md"
-              icon={Plus}
-              onClick={() => setIsAddExpenseOpen(true)}
-            >
-              Add Expense
-            </GlassButton>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Prominent Net Balance Card in White & Blue */}
-      <GlassCard
-        className={`p-6 border-blue-100/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-xs ${
-          friendOwesYou
-            ? 'bg-sky-50/50 border-sky-200/90'
-            : youOweFriend
-            ? 'bg-blue-50/50 border-blue-200/90'
-            : 'bg-white/80'
-        }`}
-      >
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            {isSettled
-              ? 'Settled Up'
-              : friendOwesYou
-              ? `${friend.name} owes you`
-              : `You owe ${friend.name}`}
-          </span>
-          <div
-            className={`text-3xl sm:text-4xl font-extrabold mt-1 ${
-              isSettled
-                ? 'text-slate-500'
-                : friendOwesYou
-                ? 'text-sky-600'
-                : 'text-blue-800'
-            }`}
-          >
-            {formatCurrency(Math.abs(numBalance), user?.defaultCurrency || 'INR')}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs text-slate-500 font-medium max-w-xs">
-            {isSettled
-              ? 'You both have settled all shared expenses and are completely square.'
-              : friendOwesYou
-              ? 'Your friend will need to pay you back to clear this balance.'
-              : 'You can record a payment to settle this balance with your friend.'}
-          </p>
-        </div>
-      </GlassCard>
-
-      {/* Tab Navigation: Expenses vs Settlements */}
-      <div className="flex items-center space-x-2 p-1.5 rounded-2xl bg-blue-50/70 border border-blue-100 max-w-xs shadow-inner">
+    <div className="space-y-5 animate-in fade-in duration-300">
+      {/* 1. Top Bar with Back Button */}
+      <div className="flex items-center justify-between pt-1">
         <button
           type="button"
-          onClick={() => setActiveTab('expenses')}
-          className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all duration-200 ${
-            activeTab === 'expenses'
-              ? 'bg-blue-600 text-white shadow-xs scale-[1.02]'
-              : 'text-slate-500 hover:text-blue-700'
-          }`}
+          onClick={() => navigate('/friends')}
+          className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition-all"
         >
-          <Receipt className="w-4 h-4" />
-          <span>Expenses</span>
+          <ChevronLeft className="w-4 h-4" />
+          <span>Friends</span>
+        </button>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-bold text-slate-500">1-on-1 Balance</span>
+        </div>
+      </div>
+
+      {/* 2. Friend Profile Card */}
+      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center space-x-3.5">
+          <Avatar name={friend.name} src={friend.avatar} size="lg" className="shadow-xs" />
+          <div>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
+              {friend.name}
+            </h1>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">{friend.email}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Styled Balance Card (Matching Home Page Style) */}
+      {isSettled ? (
+        <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center text-2xl">
+            🤝
+          </div>
+          <div>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              STATUS
+            </span>
+            <div className="text-xl font-black text-slate-900 mt-0.5">
+              All Settled Up!
+            </div>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              You and {friend.name} are completely square.
+            </p>
+          </div>
+        </div>
+      ) : friendOwesYou ? (
+        <div className="relative rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-50/80 via-emerald-50/40 to-white p-5 overflow-hidden shadow-xs">
+          <div className="flex items-start justify-between relative z-10">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-13 h-13 rounded-2xl bg-emerald-100/75 flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="text-2xl">🫲</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">
+                  OWES YOU
+                </span>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mt-1">
+                  +{formatCurrency(numBalance, user?.defaultCurrency || 'INR')}
+                </div>
+                <p className="text-xs text-slate-400 font-medium mt-1">
+                  {friend.name} owes you money
+                </p>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-emerald-100/80 text-emerald-600 flex items-center justify-center shadow-2xs shrink-0">
+              <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="relative rounded-3xl border border-rose-100 bg-gradient-to-r from-rose-50/80 via-rose-50/40 to-white p-5 overflow-hidden shadow-xs">
+          <div className="flex items-start justify-between relative z-10">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-13 h-13 rounded-2xl bg-rose-100/75 flex items-center justify-center shrink-0 shadow-2xs">
+                <span className="text-2xl">🫴</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">
+                  YOU OWE
+                </span>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mt-1">
+                  -{formatCurrency(Math.abs(numBalance), user?.defaultCurrency || 'INR')}
+                </div>
+                <p className="text-xs text-slate-400 font-medium mt-1">
+                  You owe {friend.name}
+                </p>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-rose-100/80 text-rose-600 flex items-center justify-center shadow-2xs shrink-0">
+              <TrendingDown className="w-4 h-4 stroke-[2.5]" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Action Buttons (2-Column Row) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <button
+          type="button"
+          onClick={() => setIsAddExpenseOpen(true)}
+          className="flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-500/25 active:scale-95 transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Expense</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab('settlements')}
-          className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all duration-200 ${
-            activeTab === 'settlements'
-              ? 'bg-blue-600 text-white shadow-xs scale-[1.02]'
-              : 'text-slate-500 hover:text-blue-700'
-          }`}
+          onClick={() => setIsSettleUpOpen(true)}
+          className="flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl bg-white border border-slate-200/80 text-slate-900 font-bold text-xs sm:text-sm shadow-xs hover:border-blue-200 active:scale-95 transition-all cursor-pointer"
         >
-          <Clock className="w-4 h-4" />
-          <span>Settlements</span>
+          <ArrowRightLeft className="w-4 h-4 text-blue-600" />
+          <span>Settle Up</span>
         </button>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'expenses' ? (
-        <ExpenseList
-          expenses={expenses}
-          loading={loading}
-          currentUserId={currentUserId}
-          onDelete={handleDeleteExpense}
-          onAddClick={() => setIsAddExpenseOpen(true)}
-          emptyTitle={`No shared expenses with ${friend.name}`}
-          emptyDescription="Add an expense to start splitting costs together."
-        />
-      ) : (
-        <SettlementList
-          settlements={settlements}
-          loading={loading}
-          currentUserId={currentUserId}
-        />
-      )}
+      {/* 5. Pill Tabs (Expenses vs Settlements) */}
+      <div className="flex p-1 rounded-2xl bg-slate-100 max-w-xs shadow-inner">
+        <button
+          type="button"
+          onClick={() => setActiveTab('expenses')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
+            activeTab === 'expenses'
+              ? 'bg-white text-slate-900 shadow-xs'
+              : 'text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          <Receipt className="w-3.5 h-3.5" />
+          <span>Expenses ({expenses.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('settlements')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
+            activeTab === 'settlements'
+              ? 'bg-white text-slate-900 shadow-xs'
+              : 'text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>Settlements ({settlements.length})</span>
+        </button>
+      </div>
+
+      {/* 6. List Container */}
+      <div className="bg-white rounded-3xl p-2 sm:p-3 border border-slate-100 shadow-sm divide-y divide-slate-100">
+        {activeTab === 'expenses' ? (
+          expenses.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 font-medium">
+              No shared expenses recorded with {friend.name} yet.
+            </div>
+          ) : (
+            expenses.map((exp) => {
+              const cat = categoryMap[exp.category] || categoryMap.other;
+              const CatIcon = cat.icon;
+              const isPaidByMe = String(exp.paidBy?._id || exp.paidBy) === String(user?._id || user?.id);
+
+              return (
+                <div
+                  key={exp._id}
+                  className="flex items-center justify-between p-3 sm:p-3.5 hover:bg-slate-50/60 rounded-2xl transition-colors group"
+                >
+                  <div className="flex items-center space-x-3.5 min-w-0">
+                    <div className={`w-11 h-11 rounded-2xl ${cat.bg} ${cat.text} flex items-center justify-center shrink-0 shadow-2xs`}>
+                      <CatIcon className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-slate-900 truncate tracking-tight">
+                        {exp.description}
+                      </div>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5 truncate">
+                        {isPaidByMe ? 'You paid' : `${friend.name} paid`} • {formatItemDate(exp.date)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 shrink-0 ml-2">
+                    <div className="text-right">
+                      <div className="text-sm font-black text-slate-900">
+                        {formatCurrency(exp.amount, exp.currency || 'INR')}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteExpense(exp._id)}
+                      className="p-1 text-slate-300 hover:text-rose-600 transition-colors cursor-pointer"
+                      title="Delete expense"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )
+        ) : (
+          settlements.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 font-medium">
+              No settlements recorded yet.
+            </div>
+          ) : (
+            settlements.map((set) => {
+              const isFromMe = String(set.from?._id || set.from) === String(user?._id || user?.id);
+              return (
+                <div
+                  key={set._id}
+                  className="flex items-center justify-between p-3 sm:p-3.5 hover:bg-slate-50/60 rounded-2xl transition-colors"
+                >
+                  <div className="flex items-center space-x-3.5 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <ArrowRightLeft className="w-5 h-5 stroke-[2]" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-slate-900 truncate tracking-tight">
+                        {isFromMe ? `You paid ${friend.name}` : `${friend.name} paid you`}
+                      </div>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5">
+                        {formatItemDate(set.date)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-sm font-black text-emerald-600">
+                      {formatCurrency(set.amount, set.currency || 'INR')}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )
+        )}
+      </div>
 
       {/* Modals */}
       <AddExpenseModal
@@ -246,8 +375,7 @@ const FriendDetailPage = () => {
         onClose={() => setIsSettleUpOpen(false)}
         onSuccess={() => fetchFriendData()}
         preselectedUser={friend}
-        preselectedAmount={youOweFriend ? Math.abs(numBalance) : ''}
-        friends={[friend]}
+        preselectedAmount={Math.abs(numBalance)}
       />
     </div>
   );
