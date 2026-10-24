@@ -74,24 +74,44 @@ export const parseUpiUri = (rawString = '') => {
 };
 
 /**
- * Generate UPI App Deep Link URI
+ * Generate UPI App Deep Link URI with NPCI and PSP compliant parameters
  */
 export const buildUpiDeepLink = ({
   app = 'default',
   upiId,
   payeeName = 'Friend',
   amount = 0,
-  note = 'Spend-A-Friend Expense',
+  note = 'Spend-A-Friend Settlement',
+  merchantCode = '',
+  includeAmount = true,
 }) => {
   if (!upiId) return '#';
 
   const numAmt = parseFloat(amount);
-  const amtQuery = !isNaN(numAmt) && numAmt > 0 ? `&am=${numAmt.toFixed(2)}` : '';
-  const cleanName = encodeURIComponent(payeeName || 'Merchant');
-  const cleanUpi = encodeURIComponent(upiId.trim());
-  const cleanNote = encodeURIComponent(note || 'Spend-A-Friend Expense');
+  const amtQuery =
+    includeAmount && !isNaN(numAmt) && numAmt > 0
+      ? `&am=${numAmt.toFixed(2)}`
+      : '';
 
-  const baseParams = `pa=${cleanUpi}&pn=${cleanName}${amtQuery}&cu=INR&tn=${cleanNote}`;
+  // Clean payee name (NPCI & Google Pay require alphanumeric and spaces only, no brackets or special chars)
+  const cleanPayee = (payeeName || 'User')
+    .replace(/[^a-zA-Z0-9 ]/g, '')
+    .trim() || 'User';
+
+  const cleanNote = (note || 'Spend-A-Friend')
+    .replace(/[^a-zA-Z0-9 ]/g, '')
+    .trim()
+    .slice(0, 30) || 'Settlement';
+
+  // Generate unique Transaction Reference ID required by Google Pay & UPI apps to prevent duplicate/limit errors
+  const tr = `SAF${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+  const cleanUpi = encodeURIComponent(upiId.trim());
+  const encodedName = encodeURIComponent(cleanPayee);
+  const encodedNote = encodeURIComponent(cleanNote);
+  const mcQuery = merchantCode ? `&mc=${encodeURIComponent(merchantCode)}` : '';
+
+  const baseParams = `pa=${cleanUpi}&pn=${encodedName}${amtQuery}&cu=INR&tr=${tr}&tn=${encodedNote}${mcQuery}`;
 
   switch (app) {
     case 'gpay':

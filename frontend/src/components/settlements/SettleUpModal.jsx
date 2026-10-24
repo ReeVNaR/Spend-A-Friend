@@ -5,6 +5,7 @@ import useAuth from '../../hooks/useAuth';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { currencies } from '../../utils/currency';
+import { buildUpiDeepLink } from '../../utils/upi';
 import {
   Calendar,
   QrCode,
@@ -15,6 +16,8 @@ import {
   Smartphone,
   ChevronDown,
   ChevronUp,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 
 const SettleUpModal = ({
@@ -102,28 +105,16 @@ const SettleUpModal = ({
     wasOpenRef.current = isOpen;
   }, [isOpen, preselectedUser, preselectedAmount, candidates]);
 
-  // Helper to build UPI URLs for specific apps
-  const getAppUpiUrl = (app) => {
-    const numAmt = parseFloat(amount);
-    const cleanUpi = recipientUpiId.trim();
-    if (!cleanUpi || isNaN(numAmt) || numAmt <= 0) return '#';
-    const payeeName = selectedCandidate?.name || 'Friend';
-    const params = `pa=${encodeURIComponent(cleanUpi)}&pn=${encodeURIComponent(
-      payeeName
-    )}&am=${numAmt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
-      'Spend-A-Friend Settlement'
-    )}`;
-
-    switch (app) {
-      case 'gpay':
-        return `tez://upi/pay?${params}`;
-      case 'phonepe':
-        return `phonepe://upi/pay?${params}`;
-      case 'paytm':
-        return `paytmmp://upi/pay?${params}`;
-      default:
-        return `upi://pay?${params}`;
-    }
+  // Helper to build standardized UPI URLs for specific apps with NPCI & PSP compliance
+  const getAppUpiUrl = (app, includeAmount = true) => {
+    return buildUpiDeepLink({
+      app,
+      upiId: recipientUpiId,
+      payeeName: selectedCandidate?.name,
+      amount: parseFloat(amount) || 0,
+      note: 'Spend-A-Friend Settlement',
+      includeAmount,
+    });
   };
 
   const handleAppClick = (e, app) => {
@@ -146,6 +137,22 @@ const SettleUpModal = ({
     setCopiedUpi(true);
     toast.success('UPI ID copied to clipboard!');
     setTimeout(() => setCopiedUpi(false), 2000);
+  };
+
+  // Direct In-App Payment Helper to bypass browser P2P intent limits
+  const handleCopyAndLaunchApp = (app, appName) => {
+    if (!recipientUpiId.trim()) {
+      toast.error("Please enter recipient's UPI ID first");
+      return;
+    }
+    navigator.clipboard.writeText(recipientUpiId.trim());
+    setCopiedUpi(true);
+    toast.success(`Copied! Search & paste in ${appName} to pay with zero limit.`);
+    setTimeout(() => setCopiedUpi(false), 2500);
+
+    // Open app without locking amount so the bank doesn't flag browser collect limit
+    const url = getAppUpiUrl(app, false);
+    window.location.href = url;
   };
 
   const handleSubmit = async (e) => {
@@ -459,6 +466,40 @@ const SettleUpModal = ({
                   </div>
                 </div>
               </a>
+            </div>
+
+            {/* Bank Limit Exceeded Bypass Helper Box */}
+            <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-white relative z-10 space-y-1.5 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5 text-[11px] font-bold text-amber-300">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Seeing &quot;Payment Limit Exceeded&quot;?</span>
+                </div>
+                <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded-md">
+                  Bank Rule
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-300 leading-relaxed">
+                Indian banks cap browser-initiated transfers for personal accounts. Use <strong>Copy &amp; Open App</strong> to pay directly inside your app with <strong>zero limit</strong>:
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleCopyAndLaunchApp('gpay', 'Google Pay')}
+                  className="py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[10px] font-bold text-white flex items-center justify-center space-x-1 border border-white/15 transition-all cursor-pointer truncate"
+                >
+                  <Copy className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span className="truncate">Copy &amp; Open GPay</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCopyAndLaunchApp('phonepe', 'PhonePe')}
+                  className="py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[10px] font-bold text-white flex items-center justify-center space-x-1 border border-white/15 transition-all cursor-pointer truncate"
+                >
+                  <Copy className="w-3 h-3 text-purple-400 shrink-0" />
+                  <span className="truncate">Copy &amp; Open PhonePe</span>
+                </button>
+              </div>
             </div>
 
             {/* QR Code Toggle Action */}

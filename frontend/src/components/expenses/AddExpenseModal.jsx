@@ -97,6 +97,24 @@ const AddExpenseModal = ({
     toast.success(`Opening ${appName}... Complete payment and split below!`);
   };
 
+  const handleCopyAndLaunchApp = (app, appName) => {
+    if (!scannedUpi?.upiId) return;
+    navigator.clipboard.writeText(scannedUpi.upiId.trim());
+    setCopiedUpi(true);
+    toast.success(`Copied! Search & paste in ${appName} to pay with zero limit.`);
+    setTimeout(() => setCopiedUpi(false), 2500);
+
+    const url = buildUpiDeepLink({
+      app,
+      upiId: scannedUpi.upiId,
+      payeeName: scannedUpi.payeeName,
+      amount: parseFloat(amount) || 0,
+      note: description || 'Spend-A-Friend Expense',
+      includeAmount: false,
+    });
+    window.location.href = url;
+  };
+
   // Sync state with expenseToEdit or preselected values
   useEffect(() => {
     if (!isOpen) return;
@@ -533,6 +551,40 @@ const AddExpenseModal = ({
                   </div>
                 </div>
               </a>
+            </div>
+
+            {/* Limit Exceeded Helper Box */}
+            <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-white relative z-10 space-y-1.5 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5 text-[11px] font-bold text-amber-300">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Seeing &quot;Payment Limit Exceeded&quot;?</span>
+                </div>
+                <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded-md">
+                  Bank Rule
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-300 leading-relaxed">
+                Indian banks cap browser-initiated transfers for personal accounts. Use <strong>Copy &amp; Open App</strong> to pay directly inside your app with <strong>zero limit</strong>:
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleCopyAndLaunchApp('gpay', 'Google Pay')}
+                  className="py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[10px] font-bold text-white flex items-center justify-center space-x-1 border border-white/15 transition-all cursor-pointer truncate"
+                >
+                  <Copy className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span className="truncate">Copy &amp; Open GPay</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCopyAndLaunchApp('phonepe', 'PhonePe')}
+                  className="py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-[10px] font-bold text-white flex items-center justify-center space-x-1 border border-white/15 transition-all cursor-pointer truncate"
+                >
+                  <Copy className="w-3 h-3 text-purple-400 shrink-0" />
+                  <span className="truncate">Copy &amp; Open PhonePe</span>
+                </button>
+              </div>
             </div>
 
             {/* Helper reassurance */}
